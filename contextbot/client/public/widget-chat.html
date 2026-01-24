@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat</title>
+    <!-- Use Tailwind CDN for simplicity in standalone widget -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #ccc;
+            border-radius: 3px;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50 flex flex-col h-screen">
+
+    <!-- Header -->
+    <div id="header" class="p-4 bg-blue-600 text-white shadow-md flex justify-between items-center">
+        <div>
+            <h1 class="font-bold text-lg">Support Chat</h1>
+            <p class="text-xs opacity-90">Ask us anything!</p>
+        </div>
+    </div>
+
+    <!-- Message List -->
+    <div id="chat-messages" class="flex-1 overflow-y-auto p-4 space-y-4">
+        <!-- Initial Greeting -->
+        <div class="flex justify-start">
+            <div
+                class="bg-white border text-gray-800 p-3 rounded-tr-xl rounded-br-xl rounded-bl-xl shadow-sm max-w-[85%] text-sm">
+                Hello! How can I help you today?
+            </div>
+        </div>
+    </div>
+
+    <!-- Input Area -->
+    <div class="p-4 bg-white border-t">
+        <form id="chat-form" class="flex gap-2">
+            <input type="text" id="user-input"
+                class="flex-1 border border-gray-300 rounded-full px-4 py-2 text-sm focus:outline-none focus:border-blue-500"
+                placeholder="Type a message..." autocomplete="off">
+            <button type="submit" class="bg-blue-600 text-white p-2 rounded-full hover:bg-blue-700 transition">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="22" y1="2" x2="11" y2="13"></line>
+                    <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                </svg>
+            </button>
+        </form>
+    </div>
+
+    <script>
+        // Parse Query Params
+        const params = new URLSearchParams(window.location.search);
+        const bizId = params.get('bizId');
+        const color = params.get('color') || '#2563eb';
+
+        // Styling Updates
+        document.getElementById('header').style.backgroundColor = color;
+        document.querySelector('button[type="submit"]').style.backgroundColor = color;
+
+        const chatContainer = document.getElementById('chat-messages');
+        const form = document.getElementById('chat-form');
+        const input = document.getElementById('user-input');
+
+        // Session ID storage
+        let chatId = localStorage.getItem('contextbot_chat_id');
+
+        function appendMessage(text, sender) {
+            const div = document.createElement('div');
+            div.className = `flex ${sender === 'user' ? 'justify-end' : 'justify-start'}`;
+
+            const bubble = document.createElement('div');
+            const userClasses = 'bg-blue-600 text-white rounded-tl-xl rounded-bl-xl rounded-br-xl';
+            const botClasses = 'bg-white border text-gray-800 rounded-tr-xl rounded-br-xl rounded-bl-xl shadow-sm';
+
+            bubble.className = `p-3 max-w-[85%] text-sm ${sender === 'user' ? userClasses : botClasses}`;
+            if (sender === 'user') bubble.style.backgroundColor = color;
+
+            bubble.textContent = text;
+            div.appendChild(bubble);
+            chatContainer.appendChild(div);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        async function sendMessage(message) {
+            appendMessage(message, 'user');
+            input.value = '';
+            input.disabled = true;
+
+            // Loading indicator
+            const loadingId = 'loading-' + Date.now();
+            const loadingDiv = document.createElement('div');
+            loadingDiv.id = loadingId;
+            loadingDiv.className = 'flex justify-start';
+            loadingDiv.innerHTML = '<div class="bg-gray-100 p-3 rounded-xl text-xs text-gray-500">Typing...</div>';
+            chatContainer.appendChild(loadingDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+
+            try {
+                const response = await fetch('http://localhost:3000/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ bizId, message, chatId })
+                });
+
+                const data = await response.json();
+
+                if (data.chatId) {
+                    chatId = data.chatId;
+                    localStorage.setItem('contextbot_chat_id', chatId);
+                }
+
+                document.getElementById(loadingId).remove();
+                appendMessage(data.response || 'Sorry, I encounted an error.', 'bot');
+
+            } catch (error) {
+                console.error(error);
+                document.getElementById(loadingId).remove();
+                appendMessage('Error connecting to server.', 'bot');
+            } finally {
+                input.disabled = false;
+                input.focus();
+            }
+        }
+
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const text = input.value.trim();
+            if (text && bizId) sendMessage(text);
+        });
+    </script>
+</body>
+
+</html>
