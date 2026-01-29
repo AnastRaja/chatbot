@@ -5,58 +5,83 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chat</title>
-    <!-- Use Tailwind CDN for simplicity in standalone widget -->
+    <!-- Use Tailwind CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Modern Font: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
         /* Custom scrollbar */
         ::-webkit-scrollbar {
-            width: 6px;
+            width: 5px;
         }
 
         ::-webkit-scrollbar-track {
-            background: #f1f1f1;
+            background: transparent;
         }
 
         ::-webkit-scrollbar-thumb {
-            background: #ccc;
-            border-radius: 3px;
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Smooth fade in for messages */
+        .message-enter {
+            animation: fadeIn 0.3s ease-out forwards;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
     </style>
 </head>
 
-<body class="bg-gray-50 flex flex-col h-screen">
+<body class="bg-white flex flex-col h-screen overflow-hidden">
 
     <!-- Header -->
-    <div id="header" class="p-4 bg-blue-600 text-white shadow-md flex justify-between items-center">
-        <div>
-            <h1 class="font-bold text-lg">Support Chat</h1>
-            <p class="text-xs opacity-90">Ask us anything!</p>
+    <div id="header" class="p-5 bg-blue-600 text-white shadow-lg z-10 flex border-b border-white/10">
+        <div class="flex flex-col">
+            <h1 class="font-semibold text-xl tracking-tight">Support Chat</h1>
+            <p class="text-sm text-white/80 mt-0.5">We typically reply in a few minutes</p>
         </div>
     </div>
 
     <!-- Message List -->
-    <div id="chat-messages" class="flex-1 overflow-y-auto p-4 space-y-4">
+    <div id="chat-messages" class="flex-1 overflow-y-auto p-5 space-y-4 bg-gray-50">
         <!-- Initial Greeting -->
-        <div class="flex justify-start">
+        <div class="flex justify-start message-enter">
             <div
-                class="bg-white border text-gray-800 p-3 rounded-tr-xl rounded-br-xl rounded-bl-xl shadow-sm max-w-[85%] text-sm">
-                Hello! How can I help you today?
+                class="bg-white border text-gray-800 p-4 rounded-2xl rounded-tl-none shadow-sm max-w-[85%] text-[15px] leading-relaxed">
+                Hello! 👋 We're here to help. Ask us anything about our services.
             </div>
         </div>
     </div>
 
     <!-- Input Area -->
-    <div class="p-4 bg-white border-t">
-        <form id="chat-form" class="flex gap-2">
+    <div class="p-4 bg-white border-t border-gray-100">
+        <form id="chat-form" class="flex gap-3 items-center">
             <input type="text" id="user-input"
-                class="flex-1 border border-gray-300 rounded-full px-4 py-2 text-sm focus:outline-none focus:border-blue-500"
-                placeholder="Type a message..." autocomplete="off">
-            <button type="submit" class="bg-blue-600 text-white p-2 rounded-full hover:bg-blue-700 transition">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                class="flex-1 bg-gray-50 border border-gray-200 rounded-full px-5 py-3 text-[15px] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 transition-all placeholder-gray-400 shadow-sm"
+                placeholder="Type your message..." autocomplete="off">
+            <button type="submit"
+                class="bg-blue-600 text-white p-3 rounded-full hover:bg-blue-700 transition-all shadow-md hover:shadow-lg active:scale-95 flex-shrink-0">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
                     stroke-linecap="round" stroke-linejoin="round">
                     <line x1="22" y1="2" x2="11" y2="13"></line>
                     <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
@@ -70,10 +95,21 @@
         const params = new URLSearchParams(window.location.search);
         const bizId = params.get('bizId');
         const color = params.get('color') || '#2563eb';
+        const agentName = params.get('agentName') || 'Support Chat';
+        const welcomeMsg = params.get('welcome') || "Hello! \uD83D\uDC4B We're here to help. Ask us anything about our services.";
 
         // Styling Updates
         document.getElementById('header').style.backgroundColor = color;
         document.querySelector('button[type="submit"]').style.backgroundColor = color;
+
+        // Dynamic Content
+        const headerTitle = document.querySelector('#header h1');
+        const headerSub = document.querySelector('#header p');
+        headerTitle.textContent = agentName;
+        headerSub.innerHTML = '<span class="inline-block w-2 h-2 bg-green-400 rounded-full mr-1"></span> Online';
+
+        const initialMsg = document.querySelector('#chat-messages div > div');
+        if (initialMsg) initialMsg.textContent = welcomeMsg;
 
         const chatContainer = document.getElementById('chat-messages');
         const form = document.getElementById('chat-form');
@@ -84,19 +120,20 @@
 
         function appendMessage(text, sender) {
             const div = document.createElement('div');
-            div.className = `flex ${sender === 'user' ? 'justify-end' : 'justify-start'}`;
+            div.className = `flex ${sender === 'user' ? 'justify-end' : 'justify-start'} message-enter`;
 
             const bubble = document.createElement('div');
-            const userClasses = 'bg-blue-600 text-white rounded-tl-xl rounded-bl-xl rounded-br-xl';
-            const botClasses = 'bg-white border text-gray-800 rounded-tr-xl rounded-br-xl rounded-bl-xl shadow-sm';
+            const userClasses = 'bg-blue-600 text-white rounded-2xl rounded-tr-none';
+            const botClasses = 'bg-white border text-gray-800 rounded-2xl rounded-tl-none shadow-sm';
 
-            bubble.className = `p-3 max-w-[85%] text-sm ${sender === 'user' ? userClasses : botClasses}`;
+            bubble.className = `p-4 max-w-[85%] text-[15px] leading-relaxed ${sender === 'user' ? userClasses : botClasses}`;
             if (sender === 'user') bubble.style.backgroundColor = color;
 
             bubble.textContent = text;
             div.appendChild(bubble);
             chatContainer.appendChild(div);
-            chatContainer.scrollTop = chatContainer.scrollHeight;
+            // Smooth scroll
+            chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: 'smooth' });
         }
 
         async function sendMessage(message) {
@@ -108,8 +145,8 @@
             const loadingId = 'loading-' + Date.now();
             const loadingDiv = document.createElement('div');
             loadingDiv.id = loadingId;
-            loadingDiv.className = 'flex justify-start';
-            loadingDiv.innerHTML = '<div class="bg-gray-100 p-3 rounded-xl text-xs text-gray-500">Typing...</div>';
+            loadingDiv.className = 'flex justify-start message-enter';
+            loadingDiv.innerHTML = '<div class="bg-gray-100 p-3 rounded-2xl rounded-tl-none text-xs text-gray-500 flex items-center gap-1"><span class="animate-bounce">●</span><span class="animate-bounce delay-100">●</span><span class="animate-bounce delay-200">●</span></div>';
             chatContainer.appendChild(loadingDiv);
             chatContainer.scrollTop = chatContainer.scrollHeight;
 

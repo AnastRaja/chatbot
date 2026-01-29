@@ -39,21 +39,35 @@ const Leads = () => {
                                 <td colSpan="4" className="p-8 text-center text-slate-400">No leads captured yet.</td>
                             </tr>
                         )}
-                        {leads.map(lead => (
-                            <tr key={lead.id} className="hover:bg-slate-50">
-                                <td className="p-4 text-slate-600">
-                                    {new Date(lead.timestamp).toLocaleString()}
-                                </td>
-                                <td className="p-4 font-medium text-slate-900">{lead.businessName}</td>
-                                <td className="p-4">
-                                    {lead.details.emails.map(e => <div key={e} className="text-blue-600">{e}</div>)}
-                                    {lead.details.phones.map(p => <div key={p} className="text-green-600">{p}</div>)}
-                                </td>
-                                <td className="p-4 text-slate-500 italic max-w-xs truncate">
-                                    "{lead.rawMessage}"
-                                </td>
-                            </tr>
-                        ))}
+                        {leads.map(lead => {
+                            // Backend Compatibility Adapter
+                            const details = lead.contactDetails || lead.details || {};
+                            const emails = details.emails || (details.email ? [details.email] : []);
+                            const phones = details.phones || (details.phone ? [details.phone] : []);
+                            const date = lead.createdAt || lead.timestamp;
+
+                            return (
+                                <tr key={lead._id || lead.id} className="hover:bg-slate-50">
+                                    <td className="p-4 text-slate-600">
+                                        {date ? new Date(date).toLocaleString() : 'N/A'}
+                                    </td>
+                                    <td className="p-4 font-medium text-slate-900">{lead.businessName || lead.projectId || 'Unknown'}</td>
+                                    <td className="p-4">
+                                        {emails.length > 0 ? (
+                                            emails.map((e, i) => <div key={i} className="text-blue-600">{e}</div>)
+                                        ) : (
+                                            <span className="text-slate-400 text-xs">No email</span>
+                                        )}
+                                        {phones.length > 0 && (
+                                            phones.map((p, i) => <div key={i} className="text-green-600">{p}</div>)
+                                        )}
+                                    </td>
+                                    <td className="p-4 text-slate-500 italic max-w-xs truncate">
+                                        "{lead.rawMessage}"
+                                    </td>
+                                </tr>
+                            );
+                        })}
                     </tbody>
                 </table>
             </div>

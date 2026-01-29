@@ -23,9 +23,30 @@ const PORT = process.env.PORT || 3000;
 // Middleware
 app.use(cors());
 app.use(bodyParser.json());
+
+// Security Headers for Firebase Auth (Google Sign In)
+app.use((req, res, next) => {
+    res.setHeader("Cross-Origin-Opener-Policy", "same-origin-allow-popups");
+    next();
+});
+
 app.use(express.static(path.join(__dirname, '../client/public'))); // Serve widget.js
 
+// Rate Limiter
+const rateLimit = require('express-rate-limit');
+const chatLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // Limit to 100 requests per windowMs
+    message: { error: 'Too many requests, please try again later.' }
+});
+
+// Apply limiter to chat endpoint only
+app.use('/api/chat', chatLimiter);
+
 // API Routes
+const authRoutes = require('./routes/auth');
+app.use('/api/auth', authRoutes);
+app.use('/api/documents', require('./routes/documents'));
 app.use('/api', apiRoutes);
 
 // WebSocket logic

@@ -6,9 +6,12 @@ import Dashboard from './pages/Dashboard';
 import Leads from './pages/Leads';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 import CreateProject from './pages/CreateProject';
 import ProjectsList from './pages/ProjectsList';
 import EditProject from './pages/EditProject';
+import WidgetConfig from './pages/WidgetConfig';
 
 // Placeholder Pages
 const Activity = () => <div className="p-8"><h2 className="text-2xl font-bold">Activity Log</h2><p className="text-gray-500">Real-time chat monitoring coming soon.</p></div>;
@@ -34,6 +37,8 @@ function AppRoutes() {
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
 
       <Route path="/" element={
         <ProtectedRoute>
@@ -79,6 +84,14 @@ function AppRoutes() {
         <ProtectedRoute>
           <MainLayout>
             <Activity />
+          </MainLayout>
+        </ProtectedRoute>
+      } />
+
+      <Route path="/configure-widget/:id" element={
+        <ProtectedRoute>
+          <MainLayout>
+            <WidgetConfig />
           </MainLayout>
         </ProtectedRoute>
       } />

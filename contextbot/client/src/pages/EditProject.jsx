@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
 import { useAppContext } from '../context/AppContext';
+import DocumentList from '../components/DocumentList';
 
 const EditProject = () => {
     const { id } = useParams();
@@ -275,6 +276,17 @@ const EditProject = () => {
                     </div>
                 </div>
 
+
+
+                {/* Knowledge Base */}
+                <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                    <h2 className="text-xl font-semibold text-slate-900 mb-4">Business Knowledge Base</h2>
+                    <p className="text-sm text-slate-500 mb-6">
+                        Upload documents (PDF, Text) to train your AI. The chatbot will use this information to answer visitor questions.
+                    </p>
+                    <DocumentList projectId={id} />
+                </div>
+
                 <div className="flex gap-4">
                     <button
                         type="submit"
@@ -291,8 +303,8 @@ const EditProject = () => {
                         Cancel
                     </button>
                 </div>
-            </form>
-        </div>
+            </form >
+        </div >
     );
 };
 

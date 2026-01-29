@@ -1,53 +1,146 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
+import {
+    onAuthStateChanged,
+    signOut,
+    signInWithEmailAndPassword,
+    createUserWithEmailAndPassword,
+    GoogleAuthProvider,
+    signInWithPopup,
+    updateProfile,
+    sendEmailVerification,
+    sendPasswordResetEmail,
+    verifyPasswordResetCode,
+    confirmPasswordReset
+} from 'firebase/auth';
+import { auth } from '../firebase';
 
 const AppContext = createContext();
 
 export const AppProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [profiles, setProfiles] = useState({});
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true); // Initial load
     const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-    // Check for existing session on mount
+    // Track Firebase Auth State
     useEffect(() => {
-        const savedUser = localStorage.getItem('contextbot_user');
-        if (savedUser) {
-            setUser(JSON.parse(savedUser));
-            setIsAuthenticated(true);
-        }
+        const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+            if (firebaseUser) {
+                try {
+                    const token = await firebaseUser.getIdToken();
+                    // Set default header for all axios requests
+                    axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+
+                    // Sync user with backend
+                    // We only need to do this if we have a token.
+                    // Ideally, we might check if we already have the user in state to avoid redundant calls,
+                    // but for safety on refresh, we call it.
+                    await axios.post('/api/auth/sync');
+
+                    setUser(firebaseUser);
+                    setIsAuthenticated(true);
+                } catch (error) {
+                    console.error("Auth Sync Error", error);
+                    // If sync fails, should we logout? Or just retry?
+                    // For now, we log it.
+                }
+            } else {
+                setUser(null);
+                setIsAuthenticated(false);
+                delete axios.defaults.headers.common['Authorization'];
+            }
+            setLoading(false);
+        });
+
+        // Setup Axios Interceptor to refresh token if needed (optional but good practice)
+        // For this scope, the above onAuthStateChanged handles the initial load.
+        // Firebase SKD handles token refresh automatically, but we need to ensure we get the fresh one.
+        // A simple interceptor to always get the current token before request:
+        const interceptorId = axios.interceptors.request.use(async (config) => {
+            const currentUser = auth.currentUser;
+            if (currentUser) {
+                const token = await currentUser.getIdToken();
+                config.headers.Authorization = `Bearer ${token}`;
+            }
+            return config;
+        });
+
+        return () => {
+            unsubscribe();
+            axios.interceptors.request.eject(interceptorId);
+        };
     }, []);
 
     const fetchProfiles = async () => {
-        if (!isAuthenticated) return;
-        setLoading(true);
+        if (!user) return;
+        // Example of how to attach token if needed manually
+        // const token = await user.getIdToken();
         try {
-            const res = await axios.get('/api/profiles');
+            const res = await axios.get('/api/profiles', {
+                // headers: { Authorization: `Bearer ${token}` } 
+            });
             setProfiles(res.data);
         } catch (error) {
             console.error('Failed to fetch profiles', error);
-        } finally {
-            setLoading(false);
         }
     };
 
+    // Auto-fetch profiles when user is set
     useEffect(() => {
-        if (isAuthenticated) {
+        if (user) {
             fetchProfiles();
+        } else {
+            setProfiles({});
         }
-    }, [isAuthenticated]);
+    }, [user]);
 
-    const login = (userData) => {
-        setUser(userData);
-        setIsAuthenticated(true);
-        localStorage.setItem('contextbot_user', JSON.stringify(userData));
+    // --- Auth Wrappers ---
+
+    const register = async (email, password, name) => {
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        await updateProfile(userCredential.user, { displayName: name });
+        await sendEmailVerification(userCredential.user, {
+            url: window.location.origin + '/login', // Redirect back to login after verify
+        });
+        return userCredential.user;
     };
 
-    const logout = () => {
+    const login = async (email, password) => {
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        if (!userCredential.user.emailVerified) {
+            // Optional: Sign out immediately if you want to enforce strict "no login until verified"
+            // signOut(auth);
+            // throw new Error("Please verify your email address.");
+            return userCredential.user; // Let component handle the warning
+        }
+        return userCredential.user;
+    };
+
+    const googleLogin = async () => {
+        const provider = new GoogleAuthProvider();
+        const result = await signInWithPopup(auth, provider);
+        // Google users are auto-verified
+        return result.user;
+    };
+
+    const logout = async () => {
+        await signOut(auth);
         setUser(null);
         setIsAuthenticated(false);
         setProfiles({});
-        localStorage.removeItem('contextbot_user');
+    };
+
+    const forgotPassword = async (email) => {
+        await sendPasswordResetEmail(auth, email, {
+            url: window.location.origin + '/reset-password', // Redirect to app reset page
+            handleCodeInApp: true
+        });
+    };
+
+    const resetPassword = async (oobCode, newPassword) => {
+        await verifyPasswordResetCode(auth, oobCode);
+        await confirmPasswordReset(auth, oobCode, newPassword);
     };
 
     return (
@@ -59,10 +152,14 @@ export const AppProvider = ({ children }) => {
             loading,
             setLoading,
             isAuthenticated,
+            register,
             login,
-            logout
+            googleLogin,
+            logout,
+            forgotPassword,
+            resetPassword
         }}>
-            {children}
+            {!loading && children}
         </AppContext.Provider>
     );
 };

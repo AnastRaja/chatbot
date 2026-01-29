@@ -1,32 +1,16 @@
 // server/routes/api.js
 const express = require('express');
 const router = express.Router();
-const { v4: uuidv4 } = require('uuid');
-const Project = require('../models/Project'); // Use Mongoose Model
 const { crawlAndSummarize } = require('../utils/crawler');
-const { getChatCompletion } = require('../utils/ai');
-const { extractLeads } = require('../utils/leadExtractor');
+const ChatService = require('../services/ChatService');
+const ProjectService = require('../services/ProjectService');
+const auth = require('../middleware/auth');
 
 // GET /api/stats
-router.get('/stats', async (req, res) => {
+router.get('/stats', auth, async (req, res) => {
     try {
-        const profilesCount = await Project.countDocuments();
-
-        // Aggregation to count leads and chats across all projects
-        const stats = await Project.aggregate([
-            {
-                $group: {
-                    _id: null,
-                    totalLeads: { $sum: { $size: "$leads" } },
-                    totalChats: { $sum: { $size: "$chats" } }
-                }
-            }
-        ]);
-
-        const leadsCount = stats[0]?.totalLeads || 0;
-        const chatsCount = stats[0]?.totalChats || 0;
-
-        res.json({ profiles: profilesCount, leads: leadsCount, active_chats: chatsCount });
+        const stats = await ProjectService.getUserStats(req.user.uid, req.user.email);
+        res.json(stats);
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Server Error' });
@@ -34,27 +18,42 @@ router.get('/stats', async (req, res) => {
 });
 
 // GET /api/profiles
-router.get('/profiles', async (req, res) => {
+router.get('/profiles', auth, async (req, res) => {
     try {
-        const projects = await Project.find();
-        // Convert array to object key-value map for frontend compatibility
-        const profilesMap = {};
-        projects.forEach(p => {
-            profilesMap[p.id] = p;
-        });
-        res.json(profilesMap);
+        const profiles = await ProjectService.getUserProjects(req.user.uid, req.user.email);
+        res.json(profiles);
     } catch (error) {
         res.status(500).json({ error: 'Server Error' });
     }
 });
 
-// POST /api/crawl
-router.post('/crawl', async (req, res) => {
-    const { url } = req.body;
+// GET /api/widget/config/:bizId
+router.get('/widget/config/:bizId', async (req, res) => {
+    try {
+        const { bizId } = req.params;
+        const project = await ProjectService.getProject(bizId);
 
-    if (!url || !/^https?:\/\//.test(url)) {
-        return res.status(400).json({ error: 'Invalid URL provided' });
+        if (!project) return res.status(404).json({ error: 'Project not found' });
+
+        res.json({
+            id: project.id,
+            name: project.name,
+            widgetColor: project.widgetColor,
+            agentName: project.settings?.agentName || 'Support Agent',
+            welcomeMessage: project.settings?.welcomeMessage || 'Hello! How can I help you today?',
+            autoOpenDelay: project.settings?.autoOpenDelay ?? 5000,
+            status: 'online'
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Config Load Error' });
     }
+});
+
+// POST /api/crawl
+router.post('/crawl', auth, async (req, res) => {
+    const { url } = req.body;
+    if (!url || !/^https?:\/\//.test(url)) return res.status(400).json({ error: 'Invalid URL' });
 
     try {
         const summary = await crawlAndSummarize(url);
@@ -65,48 +64,50 @@ router.post('/crawl', async (req, res) => {
 });
 
 // POST /api/profiles (Create/Update)
-router.post('/profiles', async (req, res) => {
-    const { id, name, context, widgetColor } = req.body;
-    let bizId = id;
-
+router.post('/profiles', auth, async (req, res) => {
     try {
-        // Check if updating or creating
-        let project;
-        if (bizId) {
-            project = await Project.findOne({ id: bizId });
-        }
-
-        if (project) {
-            // Update
-            project.name = name || project.name;
-            project.context = context || project.context;
-            project.widgetColor = widgetColor || project.widgetColor;
-            await project.save();
-        } else {
-            // Create
-            bizId = bizId || uuidv4();
-            project = await Project.create({
-                id: bizId,
-                name: name || 'Untitled Business',
-                context: context || {},
-                widgetColor: widgetColor || '#2563eb'
-            });
-        }
-
-        res.json({ success: true, id: bizId, profile: project });
+        const result = await ProjectService.createOrUpdateProject(req.body, req.user.uid, req.user.email);
+        res.json({ success: true, id: result.id, profile: result.project });
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Failed to save project' });
     }
 });
 
-// GET /api/leads
-router.get('/leads', async (req, res) => {
+// DELETE /api/profiles/:id
+router.delete('/profiles/:id', auth, async (req, res) => {
     try {
-        const projects = await Project.find({}, 'leads');
-        const allLeads = projects.flatMap(p => p.leads);
-        // Sort by timestamp desc
-        allLeads.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+        await ProjectService.deleteProject(req.params.id, req.user.uid, req.user.email);
+        res.json({ success: true });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Failed to delete project' });
+    }
+});
+
+// GET /api/leads
+// TODO: Add pagination and projectId query param validation
+router.get('/leads', auth, async (req, res) => {
+    try {
+        const Lead = require('../models/Lead');
+        const Project = require('../models/Project');
+
+        // Fetch user projects to filter leads
+        // Use the same logic as getUserStats - check both ID and Email
+        const query = { $or: [{ userId: req.user.uid }] };
+        if (req.user.email) query.$or.push({ userEmail: req.user.email });
+
+        const userProjects = await Project.find(query).select('id');
+        const projectIds = userProjects.map(p => p.id);
+
+        const allLeads = await Lead.find({ projectId: { $in: projectIds } }).sort({ createdAt: -1 });
+
+        // Map to format expected by frontend (if needed) or send as is
+        // The frontend expects { id, details, timestamp, businessName, rawMessage }
+        // We might need to populate project name if we want 'businessName'
+        // But for speed, let's just return the lead objects. 
+        // Note: Frontend might need adjustment if it strictly relies on 'businessName'.
+
         res.json(allLeads);
     } catch (error) {
         res.status(500).json({ error: 'Server Error' });
@@ -117,57 +118,18 @@ router.get('/leads', async (req, res) => {
 router.post('/chat', async (req, res) => {
     const { bizId, message, chatId } = req.body;
 
+    if (!bizId) return res.status(400).json({ error: 'Business ID required' });
+
     try {
-        const project = await Project.findOne({ id: bizId });
-        if (!project) {
-            return res.status(404).json({ error: 'Business ID not found' });
-        }
-
-        const sessionId = chatId || uuidv4();
-
-        // 1. Lead Extraction
-        const leadInfo = extractLeads(message);
-        if (leadInfo.isLead) {
-            project.leads.push({
-                id: uuidv4(),
-                timestamp: new Date(),
-                details: leadInfo,
-                rawMessage: message,
-                chatId: sessionId,
-                businessName: project.name
-            });
-        }
-
-        // 2. Chat Log (User)
-        project.chats.push({
-            sender: 'user',
-            text: message,
-            timestamp: new Date()
-        });
-
-        // 3. AI Response
-        const systemPrompt = `You are a helpful assistant for ${project.name}. 
-        Use this business context to answer questions: ${JSON.stringify(project.context)}.
-        Be concise, friendly, and helpful. If you don't know, ask the user to contact parsing provided contact info.`;
-
-        const response = await getChatCompletion([
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: message }
-        ]);
-
-        project.chats.push({
-            sender: 'bot',
-            text: response,
-            timestamp: new Date()
-        });
-
-        await project.save();
-
-        res.json({ response, chatId: sessionId });
+        const result = await ChatService.handleIncomingMessage(bizId, chatId, message);
+        res.json({ response: result.response, chatId: result.sessionId });
     } catch (error) {
         console.error('Chat Error:', error);
-        res.status(500).json({ error: 'AI Error' });
+        res.status(500).json({ error: 'AI Error or Project Not Found' });
     }
 });
+
+
+
 
 module.exports = router;

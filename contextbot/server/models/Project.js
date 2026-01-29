@@ -1,40 +1,21 @@
 const mongoose = require('mongoose');
 
-const ChatSchema = new mongoose.Schema({
-    sender: { type: String, required: true },
-    text: { type: String, required: true },
-    timestamp: { type: Date, default: Date.now },
-}, { _id: false });
-
-const LeadSchema = new mongoose.Schema({
-    id: { type: String },
-    timestamp: { type: Date, default: Date.now },
-    details: { type: Object }, // Contains emails, phones
-    rawMessage: { type: String },
-    chatId: { type: String },
-    businessName: { type: String }
-});
-
 const ProjectSchema = new mongoose.Schema({
-    id: { type: String, required: true, unique: true }, // Custom ID/Slug
+    id: { type: String, required: true, unique: true, index: true }, // Custom ID/Slug
+    userId: { type: String, required: true, index: true }, // Firebase UID link
+    userEmail: { type: String, required: false, index: true }, // Firebase Email link
     name: { type: String, required: true },
-    context: {
-        description: String,
-        contact: Object,
-        services: [String],
-        pricing: Object,
-        hours: String,
-        socialMedia: Object,
-        widgetColor: String
-    },
+    context: { type: Object, default: {} },
     widgetColor: { type: String, default: '#2563eb' },
-    chats: [ChatSchema],
-    leads: [LeadSchema],
+    settings: {
+        aiModel: { type: String, default: 'gpt-4o' },
+        tone: { type: String, default: 'helpful' },
+        leadGenEnabled: { type: Boolean, default: true },
+        agentName: { type: String, default: 'Support Agent' },
+        welcomeMessage: { type: String, default: 'Hello! How can I help you today?' },
+        autoOpenDelay: { type: Number, default: 5000 } // 0 to disable
+    },
     createdAt: { type: Date, default: Date.now }
 });
-
-// For now, embedding leads/chats in Project for simplicity, 
-// mimicking the DataStore structure.
-// In a larger app, you'd likely reference them.
 
 module.exports = mongoose.model('Project', ProjectSchema);
