@@ -4,7 +4,17 @@ import { useAppContext } from '../context/AppContext';
 
 const Login = () => {
     const navigate = useNavigate();
-    const { login, googleLogin } = useAppContext();
+    const { login, googleLogin, user } = useAppContext();
+
+    // Redirect when authenticated
+    React.useEffect(() => {
+        // Debug logging to verify user state
+        // console.log('Login Page: Auth State Check', user); 
+        if (user && user.emailVerified) {
+            navigate('/', { replace: true });
+        }
+    }, [user, navigate]);
+
     const [formData, setFormData] = useState({ email: '', password: '' });
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
@@ -21,7 +31,7 @@ const Login = () => {
                 setLoading(false);
                 return;
             }
-            navigate('/');
+            // Navigation handled by useEffect
         } catch (err) {
             // Handle specific firebase error codes
             console.error(err);
@@ -38,7 +48,7 @@ const Login = () => {
         setLoading(true);
         try {
             await googleLogin();
-            navigate('/');
+            // Navigation handled by useEffect
         } catch (err) {
             setError(err.message || 'Google sign-in failed');
             setLoading(false);
