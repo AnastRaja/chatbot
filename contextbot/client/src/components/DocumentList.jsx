@@ -14,6 +14,18 @@ const DocumentList = ({ projectId }) => {
         }
     }, [projectId]);
 
+    // Poll for status updates if any document is processing
+    useEffect(() => {
+        const hasProcessing = documents.some(d => d.status === 'processing');
+        let interval;
+        if (hasProcessing) {
+            interval = setInterval(fetchDocuments, 3000);
+        }
+        return () => {
+            if (interval) clearInterval(interval);
+        };
+    }, [documents, projectId]);
+
     const fetchDocuments = async () => {
         try {
             const token = await user.getIdToken();
@@ -94,8 +106,8 @@ const DocumentList = ({ projectId }) => {
                     <label
                         htmlFor="file-upload"
                         className={`cursor-pointer inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition ${uploading
-                                ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                                : 'bg-blue-50 text-blue-600 hover:bg-blue-100'
+                            ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                            : 'bg-blue-50 text-blue-600 hover:bg-blue-100'
                             }`}
                     >
                         {uploading ? (

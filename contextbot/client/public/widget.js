@@ -102,6 +102,25 @@
         iframeContainer.appendChild(iframe);
         document.body.appendChild(iframeContainer);
 
+        // --- Context Capture Logic ---
+        function sendContext() {
+            const contextData = {
+                type: 'PAGE_CONTEXT',
+                url: window.location.href,
+                title: document.title,
+                content: document.body.innerText.substring(0, 5000) // Limit content size
+            };
+            // Send to iframe
+            iframe.contentWindow.postMessage(contextData, '*');
+        }
+
+        // Send context when iframe loads
+        iframe.onload = () => {
+            // Slight delay to ensure listener is ready
+            setTimeout(sendContext, 1000);
+        };
+        // -----------------------------
+
         // 4. Toggle Logic
         let isOpen = false;
 
@@ -115,6 +134,10 @@
                 });
                 bubble.style.transform = 'rotate(90deg)';
                 localStorage.setItem('contextbot_has_opened_' + bizId, 'true');
+
+                // Resend context on open to capture any page updates
+                sendContext();
+
             } else {
                 Object.assign(iframeContainer.style, {
                     opacity: '0',
@@ -140,6 +163,70 @@
             }, config.autoOpenDelay);
         }
     }
+
+    // --- Analytics Module ---
+    const Analytics = {
+        init: function () {
+            this.visitorId = this.getVisitorId();
+            this.sessionId = this.getSessionId();
+            this.startTime = Date.now();
+            this.visitId = null;
+
+            // Track Page View
+            this.trackEvent('view');
+
+            // Start Heartbeat (every 10 seconds)
+            setInterval(() => this.trackEvent('heartbeat'), 10000);
+        },
+
+        getVisitorId: function () {
+            let vid = localStorage.getItem('cb_visitor_id');
+            if (!vid) {
+                vid = 'v_' + Math.random().toString(36).substr(2, 9) + Date.now();
+                localStorage.setItem('cb_visitor_id', vid);
+            }
+            return vid;
+        },
+
+        getSessionId: function () {
+            let sid = sessionStorage.getItem('cb_session_id');
+            if (!sid) {
+                sid = 's_' + Math.random().toString(36).substr(2, 9) + Date.now();
+                sessionStorage.setItem('cb_session_id', sid);
+            }
+            return sid;
+        },
+
+        trackEvent: function (eventType) {
+            const payload = {
+                projectId: bizId,
+                visitorId: this.visitorId,
+                sessionId: this.sessionId,
+                url: window.location.href,
+                pageTitle: document.title,
+                eventType: eventType,
+                visitId: this.visitId
+            };
+
+            // Use beacon if available for better reliability on unload, else fetch
+            // But beacon doesn't support JSON easily without Blob, simplified to fetch
+            fetch(`${host}/api/analytics/track`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+                keepalive: true // Important for unload events
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.visitId) {
+                        this.visitId = data.visitId;
+                    }
+                })
+                .catch(err => console.error('ContextBot Analytics Error:', err));
+        }
+    };
+
+    Analytics.init();
 
     init();
 

@@ -19,6 +19,18 @@ const Leads = () => {
         return () => clearInterval(interval);
     }, []);
 
+    const handleDelete = async (id) => {
+        if (window.confirm('Are you sure you want to delete this lead? This action cannot be undone.')) {
+            try {
+                await axios.delete(`/api/leads/${id}`);
+                setLeads(leads.filter(lead => (lead._id || lead.id) !== id));
+            } catch (error) {
+                console.error('Failed to delete lead', error);
+                alert('Failed to delete lead');
+            }
+        }
+    };
+
     return (
         <div className="p-8">
             <h2 className="text-2xl font-bold text-slate-800 mb-6">Captured Leads</h2>
@@ -31,6 +43,7 @@ const Leads = () => {
                             <th className="p-4 font-medium border-b">Business</th>
                             <th className="p-4 font-medium border-b">Contact Info</th>
                             <th className="p-4 font-medium border-b">Context</th>
+                            <th className="p-4 font-medium border-b w-10"></th>
                         </tr>
                     </thead>
                     <tbody className="text-sm divide-y divide-slate-100">
@@ -64,6 +77,17 @@ const Leads = () => {
                                     </td>
                                     <td className="p-4 text-slate-500 italic max-w-xs truncate">
                                         "{lead.rawMessage}"
+                                    </td>
+                                    <td className="p-4 text-right">
+                                        <button
+                                            onClick={() => handleDelete(lead._id || lead.id)}
+                                            className="text-slate-400 hover:text-red-600 transition-colors p-2 rounded-lg hover:bg-red-50"
+                                            title="Delete Lead"
+                                        >
+                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                            </svg>
+                                        </button>
                                     </td>
                                 </tr>
                             );

@@ -6,16 +6,17 @@ const AIService = require('./AIService');
 
 class DocumentService {
 
-    async processDocument(file, projectId) {
-        console.log(`[DocumentService] Processing file: ${file.originalname} for project: ${projectId}`);
-
-        // 1. Create Document Record
-        const doc = await Document.create({
+    async createDocumentRecord(file, projectId) {
+        return await Document.create({
             projectId,
             filename: file.filename,
             originalName: file.originalname,
             status: 'processing'
         });
+    }
+
+    async processDocumentBackground(doc, file) {
+        console.log(`[DocumentService] Processing file background: ${file.originalname} (Doc ID: ${doc._id})`);
 
         try {
             // 2. Extract Text
@@ -48,8 +49,6 @@ class DocumentService {
             }
 
             // Cleanup: Delete temp file
-            // We do this immediately after read to ensure cleanup happens even if later steps fail
-            // But we already have a cleanup in catch, so let's just do it here for success path
             try {
                 if (fs.existsSync(file.path)) {
                     fs.unlinkSync(file.path);
@@ -69,20 +68,32 @@ class DocumentService {
             console.log(`[DocumentService] Created ${chunks.length} chunks`);
 
             // 5. Generate Embeddings & Save Chunks
+            console.log(`[DocumentService] Starting embedding generation for ${chunks.length} chunks...`);
+            let chunkCount = 0;
             for (const chunkText of chunks) {
-                const embedding = await AIService.generateEmbedding(chunkText);
-                await DocumentChunk.create({
-                    projectId,
-                    documentId: doc._id,
-                    text: chunkText,
-                    embedding
-                });
+                chunkCount++;
+                try {
+                    console.log(`[DocumentService] Generating embedding for chunk ${chunkCount}/${chunks.length} (Length: ${chunkText.length})...`);
+                    const embedding = await AIService.generateEmbedding(chunkText);
+                    console.log(`[DocumentService] Saving chunk ${chunkCount}...`);
+                    await DocumentChunk.create({
+                        projectId: doc.projectId,
+                        documentId: doc._id,
+                        text: chunkText,
+                        embedding
+                    });
+                } catch (chunkError) {
+                    console.error(`[DocumentService] Error processing chunk ${chunkCount}:`, chunkError);
+                    throw chunkError;
+                }
             }
+            console.log(`[DocumentService] All chunks processed.`);
 
             // 6. Mark as Ready
             doc.status = 'ready';
+            doc.characterCount = text.length;
             await doc.save();
-            console.log(`[DocumentService] Document ${doc._id} processed successfully`);
+            console.log(`[DocumentService] Document ${doc._id} processed successfully and set to READY.`);
             return doc;
 
         } catch (error) {

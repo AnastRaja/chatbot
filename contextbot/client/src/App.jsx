@@ -4,6 +4,7 @@ import { AppProvider, useAppContext } from './context/AppContext';
 import Sidebar from './components/Sidebar';
 import Dashboard from './pages/Dashboard';
 import Leads from './pages/Leads';
+import Chats from './pages/Chats';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
@@ -76,6 +77,14 @@ function AppRoutes() {
         <ProtectedRoute>
           <MainLayout>
             <Leads />
+          </MainLayout>
+        </ProtectedRoute>
+      } />
+
+      <Route path="/chats" element={
+        <ProtectedRoute>
+          <MainLayout>
+            <Chats />
           </MainLayout>
         </ProtectedRoute>
       } />

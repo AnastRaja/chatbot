@@ -13,7 +13,7 @@ class ChatService {
      * Handles an incoming message from the widget.
      * Creates session if needed, saves user message, calls AI, saves bot response.
      */
-    async handleIncomingMessage(projectId, sessionId, text) {
+    async handleIncomingMessage(projectId, sessionId, text, pageContext) {
         let session;
 
         // 1. Validate Project
@@ -24,11 +24,19 @@ class ChatService {
         const mongoose = require('mongoose');
 
         if (sessionId && mongoose.Types.ObjectId.isValid(sessionId)) {
-            session = await ChatSession.findById(sessionId);
+            const foundSession = await ChatSession.findById(sessionId);
+            // Security Check: Ensure session belongs to the requesting project
+            if (foundSession && foundSession.projectId === projectId) {
+                session = foundSession;
+            } else if (foundSession) {
+                console.warn(`[ChatService] Session ${sessionId} mismatch. Req Project: ${projectId}, Session Project: ${foundSession.projectId}. Creating new session.`);
+                // Do NOT use this session. Fall through to create new.
+            }
         }
 
         if (!session) {
             session = await ChatSession.create({ projectId });
+            console.log(`[ChatService] Created new session ${session._id} for project ${projectId}`);
         }
 
         // 3. Save User Message
@@ -100,10 +108,32 @@ class ChatService {
             project.ragContext = ragContext;
         }
 
+        // Attach Page Context if available
+        if (pageContext) {
+            project.pageContext = pageContext;
+        }
+
         console.log('[ChatService] Messages for AI:', JSON.stringify(messagesForAI, null, 2));
 
         // 7. Generate AI Response
-        const botResponseText = await AIService.generateResponse(project, messagesForAI);
+        let botResponseText = await AIService.generateResponse(project, messagesForAI);
+        let leadDataExtracted = null;
+
+        // 7.5 Parse Hidden LEAD_DATA
+        const leadDataRegex = /\[\[LEAD_DATA:\s*({.*?})\]\]/;
+        const match = botResponseText.match(leadDataRegex);
+
+        if (match && match[1]) {
+            try {
+                leadDataExtracted = JSON.parse(match[1]);
+                console.log('[ChatService] Extracted Hidden Lead Data:', leadDataExtracted);
+
+                // Remove the hidden block from the response sent to the user
+                botResponseText = botResponseText.replace(match[0], '').trim();
+            } catch (e) {
+                console.error('[ChatService] Failed to parse LEAD_DATA JSON:', e);
+            }
+        }
 
         // 8. Save Bot Message
         await Message.create({
@@ -113,29 +143,88 @@ class ChatService {
             content: botResponseText
         });
 
+        // 9. Process Extracted Leads (Both Regex and AI-JSON)
+        // We combine the raw regex extraction with the high-quality AI extraction
+        this.processLeadExtraction(project, session, text, leadDataExtracted).catch(err => console.error(err));
+
         return {
             response: botResponseText,
             sessionId: session._id // Return ID so client can reuse it
         };
     }
 
-    async processLeadExtraction(project, session, text) {
-        const leadInfo = extractLeads(text);
-        if (leadInfo.isLead) {
-            // Check if lead already exists for this session to avoid duplicates
-            const existing = await Lead.findOne({ chatSessionId: session._id });
+    async processLeadExtraction(project, session, text, aiLeadData = null) {
+        // 1. Regex Extraction (Backup/Basic)
+        const regexLeadInfo = extractLeads(text);
+
+        // 2. Merge with AI Data
+        const finalLeadData = { ...regexLeadInfo };
+        if (aiLeadData) {
+            finalLeadData.isLead = true; // AI found something
+            // Merge arrays if AI found emails/phones
+            if (aiLeadData.email) finalLeadData.emails = [...(finalLeadData.emails || []), aiLeadData.email];
+            if (aiLeadData.phone) finalLeadData.phones = [...(finalLeadData.phones || []), aiLeadData.phone];
+
+            // Add specific fields
+            if (aiLeadData.name) finalLeadData.name = aiLeadData.name;
+            if (aiLeadData.country) finalLeadData.country = aiLeadData.country;
+        }
+
+        if (finalLeadData.isLead) {
+            // Deduplicate input data immediately
+            if (finalLeadData.emails) finalLeadData.emails = [...new Set(finalLeadData.emails)];
+            if (finalLeadData.phones) finalLeadData.phones = [...new Set(finalLeadData.phones)];
+
+            // Find existing lead: Check Session ID OR matching Email/Phone in this project
+            const searchConditions = [{ chatSessionId: session._id }];
+
+            if (finalLeadData.emails && finalLeadData.emails.length > 0) {
+                searchConditions.push({ 'contactDetails.emails': { $in: finalLeadData.emails } });
+            }
+            if (finalLeadData.phones && finalLeadData.phones.length > 0) {
+                searchConditions.push({ 'contactDetails.phones': { $in: finalLeadData.phones } });
+            }
+
+            const existing = await Lead.findOne({
+                projectId: project.id,
+                $or: searchConditions
+            });
 
             if (existing) {
-                // Update existing lead with new info if found
-                Object.assign(existing.contactDetails, leadInfo);
+                // Smart Merge to avoid overwriting existing data with empty arrays
+                const current = existing.contactDetails || {};
+
+                // Combine arrays (Existing + New found in this message)
+                const combinedEmails = [...(current.emails || []), ...(finalLeadData.emails || [])];
+                const combinedPhones = [...(current.phones || []), ...(finalLeadData.phones || [])];
+
+                // Deduplicate
+                const uniqueEmails = [...new Set(combinedEmails)];
+                const uniquePhones = [...new Set(combinedPhones)];
+
+                // Prepare updated object
+                const updatedDetails = {
+                    ...current,
+                    emails: uniqueEmails,
+                    phones: uniquePhones
+                };
+
+                // Only overwrite scalar fields if new valid data is provided
+                if (finalLeadData.name) updatedDetails.name = finalLeadData.name;
+                if (finalLeadData.country) updatedDetails.country = finalLeadData.country;
+
+                existing.contactDetails = updatedDetails;
+                // Update session ID to latest interaction if different? Maybe not, keep original trace.
+                // But we could update a "lastSessionId" if we had one.
+
                 await existing.save();
+                console.log(`[Lead] Updated lead for project ${project.id}. Data:`, JSON.stringify(updatedDetails));
             } else {
                 await Lead.create({
                     projectId: project.id,
                     chatSessionId: session._id,
-                    contactDetails: leadInfo,
-                    rawMessage: text,
-                    source: 'chat_widget'
+                    rawMessage: text, // First context
+                    contactDetails: finalLeadData // Already deduplicated above
                 });
                 console.log(`[Lead] New lead captured for project ${project.id}`);
             }

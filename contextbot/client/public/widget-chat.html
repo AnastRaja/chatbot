@@ -117,6 +117,15 @@
 
         // Session ID storage
         let chatId = localStorage.getItem('contextbot_chat_id');
+        let pageContext = null;
+
+        // Listen for context from parent widget.js
+        window.addEventListener('message', (event) => {
+            if (event.data && event.data.type === 'PAGE_CONTEXT') {
+                pageContext = event.data;
+                console.log('ContextBot: Received page context', pageContext.title);
+            }
+        });
 
         function appendMessage(text, sender) {
             const div = document.createElement('div');
@@ -154,7 +163,12 @@
                 const response = await fetch('http://localhost:3000/api/chat', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ bizId, message, chatId })
+                    body: JSON.stringify({
+                        bizId,
+                        message,
+                        chatId,
+                        pageContext // Send captured context
+                    })
                 });
 
                 const data = await response.json();

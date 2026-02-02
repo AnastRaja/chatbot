@@ -2,27 +2,301 @@
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Widget Test</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SmileCare Dental Hospital</title>
+
+    <style>
+        :root {
+            --primary: #0ea5a4;
+            --dark: #0f172a;
+            --muted: #475569;
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --border: #e2e8f0;
+        }
+
+        * {
+            box-sizing: border-box;
+            font-family: system-ui, -apple-system, Segoe UI, sans-serif;
+        }
+
+        body {
+            margin: 0;
+            background: var(--bg);
+            color: var(--dark);
+            line-height: 1.6;
+        }
+
+        header {
+            background: linear-gradient(135deg, #0ea5a4, #0f766e);
+            color: white;
+            padding: 80px 20px;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 2.8rem;
+            margin-bottom: 12px;
+        }
+
+        header p {
+            max-width: 720px;
+            margin: auto;
+            opacity: 0.95;
+        }
+
+        section {
+            max-width: 1100px;
+            margin: 64px auto;
+            padding: 0 20px;
+        }
+
+        h2 {
+            font-size: 2rem;
+            margin-bottom: 16px;
+        }
+
+        p {
+            color: var(--muted);
+            margin-bottom: 12px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 24px;
+        }
+
+        .card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 28px;
+        }
+
+        .card h3 {
+            margin-top: 0;
+            margin-bottom: 10px;
+        }
+
+        ul {
+            padding-left: 18px;
+            color: var(--muted);
+        }
+
+        li {
+            margin-bottom: 6px;
+        }
+
+        .info {
+            background: #ecfeff;
+            border: 1px solid #99f6e4;
+            border-radius: 16px;
+            padding: 32px;
+            text-align: center;
+        }
+
+        footer {
+            background: var(--dark);
+            color: #cbd5f5;
+            padding: 40px 20px;
+            text-align: center;
+        }
+    </style>
 </head>
 
 <body>
-    <h1>Testing ContextBot Widget</h1>
-    <p>The chat widget should appear in the bottom right corner.</p>
 
-    <!-- Replace with your actual project ID -->
-    <!-- <script src="http://localhost:3000/widget.js" data-id="2d2e3dff-fe99-4c4c-a5b4-b1c8a025afa2"
-        data-color="#f06c00"></script> -->
-    <!-- <script src="http://localhost:3000/widget.js" data-id="53510026-0d26-43eb-a8ae-9b79712a2f63"
-        data-color="#b31200"></script> -->
-    <!-- <script src="http://localhost:3000/widget.js" data-id="b84f4ec3-679c-4402-8a21-4ce8fe287f02"
-        data-color="#7e00c2"></script> -->
-    <script src="http://localhost:3000/widget.js" data-id="29c458ef-3fcd-4960-b5d8-f5c8277dbe87"
-        data-color="#f207eb"></script>
-    <!-- <script src="http://localhost:3000/widget.js" data-id="urban-brew" data-color="#77c700"></script> -->
-    <!-- <script src="http://localhost:3000/widget.js" data-id="88e01a52-8395-4c57-9f16-a3cc85234621"
-        data-color="#77c700"></script> -->
+    <!-- HERO -->
+    <header>
+        <h1>SmileCare Dental Hospital</h1>
+        <p>
+            Complete dental care for children, adults, and families — delivered with
+            modern technology, strict hygiene standards, and a patient-first approach.
+        </p>
+    </header>
+
+    <!-- ABOUT -->
+    <section>
+        <h2>About Our Hospital</h2>
+        <p>
+            SmileCare Dental Hospital is a multi-specialty dental center established in 2018.
+            We focus on preventive dentistry, accurate diagnosis, and long-term oral health
+            rather than quick fixes.
+        </p>
+        <p>
+            Our team treats every patient with transparency, comfort, and clear communication,
+            ensuring you understand your dental condition and treatment options.
+        </p>
+    </section>
+
+    <!-- SERVICES -->
+    <section>
+        <h2>Our Dental Services</h2>
+        <div class="grid">
+
+            <div class="card">
+                <h3>General Dentistry</h3>
+                <ul>
+                    <li>Dental checkups & consultation</li>
+                    <li>Teeth cleaning and polishing</li>
+                    <li>Tooth-colored fillings</li>
+                    <li>Preventive dental care</li>
+                </ul>
+            </div>
+
+            <div class="card">
+                <h3>Cosmetic Dentistry</h3>
+                <ul>
+                    <li>Teeth whitening</li>
+                    <li>Smile design</li>
+                    <li>Dental veneers</li>
+                    <li>Gap correction</li>
+                </ul>
+            </div>
+
+            <div class="card">
+                <h3>Root Canal Treatment</h3>
+                <ul>
+                    <li>Painless root canal therapy</li>
+                    <li>Single-sitting procedures</li>
+                    <li>Digital X-ray diagnosis</li>
+                </ul>
+            </div>
+
+            <div class="card">
+                <h3>Dental Implants</h3>
+                <ul>
+                    <li>Single & multiple implants</li>
+                    <li>Permanent tooth replacement</li>
+                    <li>Advanced implant planning</li>
+                </ul>
+            </div>
+
+            <div class="card">
+                <h3>Orthodontics</h3>
+                <ul>
+                    <li>Metal & ceramic braces</li>
+                    <li>Clear aligners</li>
+                    <li>Bite correction</li>
+                </ul>
+            </div>
+
+            <div class="card">
+                <h3>Pediatric Dentistry</h3>
+                <ul>
+                    <li>Child dental checkups</li>
+                    <li>Cavity treatment</li>
+                    <li>Habit correction guidance</li>
+                </ul>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- WHY US -->
+    <section>
+        <h2>Why Choose SmileCare</h2>
+        <div class="grid">
+            <div class="card">
+                <h3>Experienced Doctors</h3>
+                <p>Qualified dentists with years of clinical experience.</p>
+            </div>
+            <div class="card">
+                <h3>Modern Equipment</h3>
+                <p>Digital X-rays, sterilized instruments, and updated technology.</p>
+            </div>
+            <div class="card">
+                <h3>Patient Safety</h3>
+                <p>Strict hygiene protocols and infection control standards.</p>
+            </div>
+            <div class="card">
+                <h3>Transparent Pricing</h3>
+                <p>Clear treatment plans with no hidden charges.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- POLICIES -->
+    <section>
+        <h2>Hospital Policies</h2>
+        <div class="grid">
+
+            <div class="card">
+                <h3>Appointments</h3>
+                <p>
+                    Consultations are provided by prior appointment. Walk-ins are accepted
+                    subject to availability.
+                </p>
+            </div>
+
+            <div class="card">
+                <h3>Payments</h3>
+                <p>
+                    Payments can be made via cash, UPI, or card. Major treatments may require
+                    advance confirmation.
+                </p>
+            </div>
+
+            <div class="card">
+                <h3>Privacy</h3>
+                <p>
+                    Patient records and medical information are kept confidential and are
+                    never shared without consent.
+                </p>
+            </div>
+
+            <div class="card">
+                <h3>Cancellations</h3>
+                <p>
+                    Appointment cancellations should be informed at least 24 hours in advance.
+                </p>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- FAQ -->
+    <section>
+        <h2>Frequently Asked Questions</h2>
+        <div class="grid">
+            <div class="card">
+                <h3>Is root canal treatment painful?</h3>
+                <p>No. Modern anesthesia makes the procedure comfortable.</p>
+            </div>
+            <div class="card">
+                <h3>Do you treat children?</h3>
+                <p>Yes, we provide specialized pediatric dental care.</p>
+            </div>
+            <div class="card">
+                <h3>How often should I visit a dentist?</h3>
+                <p>Every six months for routine checkups.</p>
+            </div>
+            <div class="card">
+                <h3>Do you offer cosmetic treatments?</h3>
+                <p>Yes, including whitening, veneers, and smile design.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- CONTACT -->
+    <section>
+        <div class="info">
+            <h2>Visit SmileCare Dental Hospital</h2>
+            <p>📍 City Center Road, Bengaluru, India</p>
+            <p>📞 +91 91234 56789</p>
+            <p>✉️ contact@smilecaredental.com</p>
+            <p>🕘 Mon–Sat: 9:30 AM – 7:30 PM</p>
+        </div>
+    </section>
+
+    <footer>
+        <p>© 2026 SmileCare Dental Hospital</p>
+        <p>Committed to healthy, confident smiles</p>
+    </footer>
+    <script src="http://localhost:3000/widget.js" data-id="56ccf9d5-cb75-434a-b0c9-9b227ad815ec"
+        data-color="#ff007b"></script>
 </body>
 
 </html>

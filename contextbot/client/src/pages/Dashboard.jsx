@@ -2,6 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAppContext } from '../context/AppContext';
+import {
+    LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+    BarChart, Bar, Legend
+} from 'recharts';
 
 const StatCard = ({ title, value, color, icon, trend }) => (
     <div className="bg-white p-6 rounded-xl shadow-[0_2px_10px_-3px_rgba(6,81,237,0.1)] border border-slate-100/50 hover:shadow-md transition duration-200">
@@ -10,7 +14,7 @@ const StatCard = ({ title, value, color, icon, trend }) => (
                 <p className="text-slate-500 text-sm font-medium mb-1">{title}</p>
                 <div className="flex items-baseline gap-2">
                     <h3 className="text-2xl font-bold text-slate-800">{value}</h3>
-                    {trend && <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-0.5 rounded-full">{trend}</span>}
+                    {trend && <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${trend.startsWith('+') ? 'text-green-600 bg-green-50' : 'text-red-600 bg-red-50'}`}>{trend}</span>}
                 </div>
             </div>
             <div className={`p-3 rounded-lg ${color} bg-opacity-10 text-xl`}>
@@ -23,22 +27,40 @@ const StatCard = ({ title, value, color, icon, trend }) => (
 const Dashboard = () => {
     const navigate = useNavigate();
     const { profiles } = useAppContext();
-    const [stats, setStats] = useState({ profiles: 0, leads: 0, active_chats: 0 });
     const profilesArray = Object.values(profiles || {});
 
+    // State
+    const [selectedProjectId, setSelectedProjectId] = useState('');
+    const [analytics, setAnalytics] = useState(null);
+    const [loading, setLoading] = useState(false);
+
+    // Initialize Default Project
     useEffect(() => {
-        const getStats = async () => {
+        if (profilesArray.length > 0 && !selectedProjectId) {
+            setSelectedProjectId(profilesArray[0].id);
+        }
+    }, [profiles]);
+
+    // Fetch Analytics
+    useEffect(() => {
+        const fetchAnalytics = async () => {
+            if (!selectedProjectId) return;
+            setLoading(true);
             try {
-                const res = await axios.get('/api/stats');
-                setStats(res.data);
-            } catch (e) {
-                console.error(e);
+                const res = await axios.get(`/api/analytics/stats/${selectedProjectId}`);
+                setAnalytics(res.data);
+            } catch (error) {
+                console.error("Failed to load analytics", error);
+            } finally {
+                setLoading(false);
             }
         };
-        getStats();
-        const interval = setInterval(getStats, 5000);
+
+        fetchAnalytics();
+        const interval = setInterval(fetchAnalytics, 30000); // Poll every 30s
         return () => clearInterval(interval);
-    }, []);
+    }, [selectedProjectId]);
+
 
     // Empty State
     if (profilesArray.length === 0) {
@@ -66,137 +88,135 @@ const Dashboard = () => {
                             </svg>
                         </span>
                     </button>
-
-                    <div className="mt-16 grid grid-cols-3 gap-8 text-left">
-                        {[
-                            { title: 'AI-Powered', desc: 'Smart responses using GPT-4o', icon: 'M13 10V3L4 14h7v7l9-11h-7z' },
-                            { title: 'Lead Capture', desc: 'Auto-collect emails & phones', icon: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z' },
-                            { title: 'Customizable', desc: 'Match your brand identity', icon: 'M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z' }
-                        ].map((feature, i) => (
-                            <div key={i} className="flex gap-4">
-                                <div className="flex-shrink-0 w-10 h-10 bg-white rounded-lg border border-slate-100 shadow-sm flex items-center justify-center text-blue-600">
-                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={feature.icon} />
-                                    </svg>
-                                </div>
-                                <div>
-                                    <h3 className="font-semibold text-slate-800 text-sm">{feature.title}</h3>
-                                    <p className="text-xs text-slate-500 mt-1">{feature.desc}</p>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
                 </div>
             </div>
         );
     }
 
+    const selectedProject = profilesArray.find(p => p.id === selectedProjectId);
+
     // Main Dashboard
     return (
-        <div className="p-8 max-w-7xl mx-auto">
-            <div className="flex justify-between items-end mb-8">
+        <div className="p-8 max-w-7xl mx-auto space-y-8">
+            {/* Header & Controls */}
+            <div className="flex flex-col md:flex-row justify-between md:items-end gap-4">
                 <div>
-                    <h2 className="text-2xl font-bold text-slate-800 tracking-tight">Overview</h2>
-                    <p className="text-slate-500 text-sm mt-1">Here's what's happening with your projects today.</p>
+                    <h2 className="text-2xl font-bold text-slate-800 tracking-tight">Dashboard</h2>
+                    <p className="text-slate-500 text-sm mt-1">Real-time insights for your projects.</p>
                 </div>
-                <button
-                    onClick={() => navigate('/create-project')}
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium text-sm transition shadow-sm hover:shadow flex items-center gap-2"
-                >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                    </svg>
-                    New Project
-                </button>
-            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-                <StatCard
-                    title="Total Projects"
-                    value={stats.profiles}
-                    color="bg-blue-600 text-blue-600"
-                    icon="📂"
-                />
-                <StatCard
-                    title="Captured Leads"
-                    value={stats.leads}
-                    color="bg-emerald-600 text-emerald-600"
-                    icon="👥"
-                    trend="+12%"
-                />
-                <StatCard
-                    title="Active Conversations"
-                    value={stats.active_chats}
-                    color="bg-violet-600 text-violet-600"
-                    icon="💬"
-                    trend="+5%"
-                />
-            </div>
-
-            <div className="bg-white rounded-2xl shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07),0_10px_20px_-2px_rgba(0,0,0,0.04)] border border-slate-100 overflow-hidden">
-                <div className="p-6 border-b border-slate-50 flex justify-between items-center">
-                    <h3 className="font-bold text-lg text-slate-800">Recent Projects</h3>
-                    <button
-                        onClick={() => navigate('/projects')}
-                        className="text-blue-600 hover:text-blue-700 font-medium text-sm hover:underline"
+                <div className="flex items-center gap-3">
+                    <select
+                        className="bg-white border border-slate-200 text-slate-700 py-2.5 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-sm font-medium shadow-sm transition min-w-[200px]"
+                        value={selectedProjectId}
+                        onChange={(e) => setSelectedProjectId(e.target.value)}
                     >
-                        View All
+                        {profilesArray.map(p => (
+                            <option key={p.id} value={p.id}>{p.name}</option>
+                        ))}
+                    </select>
+
+                    <button
+                        onClick={() => navigate('/create-project')}
+                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg font-medium text-sm transition shadow-sm hover:shadow flex items-center gap-2"
+                    >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                        </svg>
+                        New Project
                     </button>
                 </div>
-                <div className="divide-y divide-slate-50">
-                    {profilesArray.slice(0, 5).map(project => (
-                        <div key={project.id} className="p-4 hover:bg-slate-50/50 transition flex items-center justify-between group">
-                            <div className="flex items-center gap-4">
-                                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-bold text-sm shadow-sm"
-                                    style={{ background: project.context?.widgetColor ? `linear-gradient(135deg, ${project.context.widgetColor}, ${project.context.widgetColor}dd)` : undefined }}>
-                                    {project.name.substring(0, 2).toUpperCase()}
-                                </div>
-                                <div>
-                                    <h4 className="font-semibold text-slate-800">{project.name}</h4>
-                                    <p className="text-xs text-slate-500 line-clamp-1 max-w-md">{project.context?.description || 'No description'}</p>
-                                </div>
-                            </div>
-
-                            <div className="flex items-center gap-6">
-                                <div className="flex gap-4 text-xs text-slate-500">
-                                    <span className="flex items-center gap-1 bg-slate-100 px-2 py-1 rounded">
-                                        👥 {project.leads?.length || 0} leads
-                                    </span>
-                                    <span className="flex items-center gap-1 bg-slate-100 px-2 py-1 rounded">
-                                        💬 {project.chats?.length || 0} chats
-                                    </span>
-                                </div>
-                                <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <button
-                                        onClick={() => navigate(`/edit-project/${project.id}`)}
-                                        className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition"
-                                        title="Edit"
-                                    >
-                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                                        </svg>
-                                    </button>
-                                    <button
-                                        onClick={() => navigate(`/configure-widget/${project.id}`)}
-                                        className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition"
-                                        title="Configure"
-                                    >
-                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                        </svg>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    ))}
-                    {profilesArray.length === 0 && (
-                        <div className="p-8 text-center text-slate-500">
-                            No projects yet. Create one to get started!
-                        </div>
-                    )}
-                </div>
             </div>
+
+            {loading && !analytics ? (
+                <div className="text-center py-20 text-slate-400">Loading analytics...</div>
+            ) : analytics ? (
+                <>
+                    {/* Stat Cards */}
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                        <StatCard
+                            title="Total Visitors"
+                            value={analytics.uniqueVisitors}
+                            color="bg-blue-600 text-blue-600"
+                            icon="👥"
+                        />
+                        <StatCard
+                            title="Total Sessions"
+                            value={analytics.totalVisits}
+                            color="bg-indigo-600 text-indigo-600"
+                            icon="📂"
+                        />
+                        <StatCard
+                            title="Avg. Session Duration"
+                            value={`${analytics.avgDuration}s`}
+                            color="bg-emerald-600 text-emerald-600"
+                            icon="⏱"
+                        />
+                        <StatCard
+                            title="Bounce Rate"
+                            value={`${analytics.bounceRate}%`}
+                            color="bg-orange-500 text-orange-600"
+                            icon="📉"
+                        />
+                    </div>
+
+                    {/* Charts Section */}
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        {/* Traffic Chart */}
+                        <div className="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                            <h3 className="font-bold text-lg text-slate-800 mb-6">Traffic Over Time (Last 7 Days)</h3>
+                            <div className="h-[300px] w-full">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <LineChart data={analytics.chartData}>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                        <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12 }} dy={10} />
+                                        <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12 }} />
+                                        <Tooltip
+                                            contentStyle={{ backgroundColor: '#fff', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}
+                                            itemStyle={{ color: '#1e293b' }}
+                                        />
+                                        <Line type="monotone" dataKey="visitors" stroke="#3b82f6" strokeWidth={3} dot={{ r: 4, fill: '#3b82f6', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 6 }} />
+                                    </LineChart>
+                                </ResponsiveContainer>
+                            </div>
+                        </div>
+
+                        {/* Top Pages */}
+                        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                            <h3 className="font-bold text-lg text-slate-800 mb-4">Top Pages</h3>
+                            <div className="space-y-4">
+                                {analytics.topPages.length > 0 ? (
+                                    analytics.topPages.map((page, idx) => (
+                                        <div key={idx} className="group">
+                                            <div className="flex justify-between items-start mb-1">
+                                                <p className="text-sm font-medium text-slate-700 truncate max-w-[200px]" title={page.url}>
+                                                    {page.url.replace(window.location.origin, '') || page.url}
+                                                </p>
+                                                <span className="text-xs font-semibold bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">{page.visits} visits</span>
+                                            </div>
+                                            <div className="flex justify-between text-xs text-slate-400">
+                                                <span>Duration: {page.avgTime}s</span>
+                                                <span>Bounce: {page.bounceRate}%</span>
+                                            </div>
+                                            {/* Mini bar */}
+                                            <div className="w-full bg-slate-100 h-1.5 rounded-full mt-2 overflow-hidden">
+                                                <div
+                                                    className="bg-blue-500 h-full rounded-full"
+                                                    style={{ width: `${(page.visits / analytics.totalVisits) * 100}%` }}
+                                                ></div>
+                                            </div>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <div className="text-center text-slate-400 py-10">No data available</div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </>
+            ) : null}
+
+            {/* Quick Actions / Recent Activity could go here */}
         </div>
     );
 };

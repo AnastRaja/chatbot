@@ -60,8 +60,17 @@ router.post('/upload', authMiddleware, upload.single('file'), async (req, res) =
 
     try {
         console.log(`[Upload API] Received file: ${req.file.originalname}, Project: ${projectId}`);
-        const doc = await DocumentService.processDocument(req.file, projectId);
+
+        // 1. Initialize Document (Sync-ish)
+        const doc = await DocumentService.createDocumentRecord(req.file, projectId);
+
+        // 2. Respond immediately
         res.json(doc);
+
+        // 3. Process in background
+        // We don't await this, so it runs after response
+        DocumentService.processDocumentBackground(doc, req.file)
+            .catch(err => console.error('[Upload API] Background processing error:', err));
     } catch (err) {
         console.error('[Upload API] Error processing document:', err);
         res.status(500).json({ error: err.message });

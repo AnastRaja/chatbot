@@ -1,0 +1,71 @@
+{
+  "totalChats": 4,
+  "chats": [
+    {
+      "id": "69749a5e18b506bac580f40a",
+      "projectId": "refactor-test-1769249374298",
+      "status": "active"
+    },
+    {
+      "id": "69749b5c84f7f0442691eb0c",
+      "projectId": "fix-test-1769249628500",
+      "status": "active"
+    },
+    {
+      "id": "69749b7d62f0cca1d4e87516",
+      "projectId": "refactor-test-1769249374298",
+      "status": "active"
+    },
+    {
+      "id": "6974bab1285dd46577ff6552",
+      "projectId": "2d2e3dff-fe99-4c4c-a5b4-b1c8a025afa2",
+      "status": "active"
+    }
+  ],
+  "projects": [
+    {
+      "id": "2d2e3dff-fe99-4c4c-a5b4-b1c8a025afa2",
+      "name": "Urban Brew Coffee"
+    },
+    {
+      "id": "refactor-test-1769249374298",
+      "name": "Refactor Test Biz"
+    },
+    {
+      "id": "config-test-1769255117903",
+      "name": "Config Test Biz"
+    },
+    {
+      "id": "config-test-1769255137232",
+      "name": "Config Test Biz"
+    },
+    {
+      "id": "5894b4be-e398-4dbd-a7d8-c930dde3b838",
+      "name": "Anast raja N"
+    },
+    {
+      "id": "166fc6f7-083f-46e9-ae7f-573863df1ffb",
+      "name": "UrbanHive Digital Solutions",
+      "userId": "ipmMYtQI0UaTRV9ahXujhmNXCy93",
+      "email": "anast.wealwin@gmail.com"
+    },
+    {
+      "id": "53510026-0d26-43eb-a8ae-9b79712a2f63",
+      "name": "GOOGLE_API_KEY",
+      "userId": "3VcSVnBSFsetrfGloVf1WcKnCQ62",
+      "email": "anastrko007@gmail.com"
+    },
+    {
+      "id": "b84f4ec3-679c-4402-8a21-4ce8fe287f02",
+      "name": "Anastraja",
+      "userId": "3VcSVnBSFsetrfGloVf1WcKnCQ62",
+      "email": "anastrko007@gmail.com"
+    },
+    {
+      "id": "29c458ef-3fcd-4960-b5d8-f5c8277dbe87",
+      "name": "Janani",
+      "userId": "3VcSVnBSFsetrfGloVf1WcKnCQ62",
+      "email": "anastrko007@gmail.com"
+    }
+  ]
+}
