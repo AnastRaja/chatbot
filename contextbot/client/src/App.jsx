@@ -13,6 +13,7 @@ import CreateProject from './pages/CreateProject';
 import ProjectsList from './pages/ProjectsList';
 import EditProject from './pages/EditProject';
 import WidgetConfig from './pages/WidgetConfig';
+import Subscription from './pages/Subscription';
 
 // Placeholder Pages
 const Activity = () => <div className="p-8"><h2 className="text-2xl font-bold">Activity Log</h2><p className="text-gray-500">Real-time chat monitoring coming soon.</p></div>;
@@ -101,6 +102,14 @@ function AppRoutes() {
         <ProtectedRoute>
           <MainLayout>
             <WidgetConfig />
+          </MainLayout>
+        </ProtectedRoute>
+      } />
+
+      <Route path="/subscription" element={
+        <ProtectedRoute>
+          <MainLayout>
+            <Subscription />
           </MainLayout>
         </ProtectedRoute>
       } />

@@ -3,6 +3,7 @@ const router = express.Router();
 const multer = require('multer');
 const path = require('path');
 const DocumentService = require('../services/DocumentService');
+const SubscriptionService = require('../services/SubscriptionService');
 const authMiddleware = require('../middleware/auth');
 
 // Configure Multer for file upload
@@ -61,8 +62,22 @@ router.post('/upload', authMiddleware, upload.single('file'), async (req, res) =
     try {
         console.log(`[Upload API] Received file: ${req.file.originalname}, Project: ${projectId}`);
 
-        // 1. Initialize Document (Sync-ish)
+        // 1. Check Subscription Storage Limit before processing
+        // Note: req.file.size is in bytes
+        try {
+            await SubscriptionService.checkStorageLimit(req.user.uid, req.file.size);
+        } catch (limitErr) {
+            // Clean up file if limit exceeded
+            const fs = require('fs');
+            fs.unlinkSync(req.file.path);
+            return res.status(403).json({ error: limitErr.message });
+        }
+
+        // 2. Initialize Document (Sync-ish)
         const doc = await DocumentService.createDocumentRecord(req.file, projectId);
+
+        // 3. Update Usage
+        await SubscriptionService.updateStorageUsage(req.user.uid, req.file.size);
 
         // 2. Respond immediately
         res.json(doc);
@@ -80,7 +95,24 @@ router.post('/upload', authMiddleware, upload.single('file'), async (req, res) =
 // Delete a document
 router.delete('/:id', authMiddleware, async (req, res) => {
     try {
-        await DocumentService.deleteDocument(req.params.id);
+        // Get document to know size before deleting (need a way to know size from doc record)
+        // For simplicity, we might assume we store size in doc record, checking Document schema... 
+        // Document.js has 'size' field? Let's check. 
+        // Assuming DocumentService.deleteDocument returns the deleted doc or we fetch it first.
+
+        // Let's fetch first to get size
+        const Document = require('../models/Document');
+        const doc = await Document.findById(req.params.id);
+
+        if (doc) {
+            const size = doc.size || 0;
+            await DocumentService.deleteDocument(req.params.id);
+            // Decrease usage
+            await SubscriptionService.updateStorageUsage(req.user.uid, -size);
+        } else {
+            await DocumentService.deleteDocument(req.params.id);
+        }
+
         res.json({ message: 'Document deleted successfully' });
     } catch (err) {
         res.status(500).json({ error: err.message });

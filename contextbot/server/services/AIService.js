@@ -1,4 +1,5 @@
 const OpenAI = require('openai');
+const SubscriptionService = require('./SubscriptionService');
 require('dotenv').config();
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -44,6 +45,13 @@ class AIService {
     async generateResponse(project, messages) {
         try {
             console.log(`[AIService] Generating response for project: ${project.id} (${project.name})`);
+
+            // Check Subscription Limits
+            const allowed = await SubscriptionService.checkAILimit(project.userId);
+            if (!allowed) {
+                return "I've reached my monthly limit for AI responses. Please contact the site owner to upgrade their plan.";
+            }
+
             console.log(`[AIService] Context found:`, JSON.stringify(project.context, null, 2));
 
             // Construct System Prompt
@@ -81,6 +89,10 @@ class AIService {
             });
 
             const reply = response.choices[0].message.content;
+
+            // Increment Usage
+            await SubscriptionService.incrementAIUsage(project.userId);
+
             console.log(`[AIService] Reply: ${reply}`);
             return reply;
 

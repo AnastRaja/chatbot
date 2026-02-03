@@ -29,7 +29,7 @@ router.post('/sync', authMiddleware, async (req, res) => {
         res.json({ success: true, user });
     } catch (error) {
         console.error('Auth Sync Error:', error);
-        res.status(500).json({ error: 'Server Error' });
+        res.status(500).json({ error: error.message });
     }
 });
 

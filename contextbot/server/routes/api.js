@@ -4,6 +4,7 @@ const router = express.Router();
 const { crawlAndSummarize } = require('../utils/crawler');
 const ChatService = require('../services/ChatService');
 const ProjectService = require('../services/ProjectService');
+const SubscriptionService = require('../services/SubscriptionService');
 const auth = require('../middleware/auth');
 
 // GET /api/stats
@@ -66,7 +67,22 @@ router.post('/crawl', auth, async (req, res) => {
 // POST /api/profiles (Create/Update)
 router.post('/profiles', auth, async (req, res) => {
     try {
+        // Enforce Subscription Limit for New Projects (not updates)
+        if (!req.body.id) {
+            try {
+                await SubscriptionService.checkProjectLimit(req.user.uid);
+            } catch (limitErr) {
+                return res.status(403).json({ error: limitErr.message });
+            }
+        }
+
         const result = await ProjectService.createOrUpdateProject(req.body, req.user.uid, req.user.email);
+
+        // Use increment helper if it's a new project? 
+        // Or SubscriptionService counts dynamically. 
+        // For 'projectsCreated' usage counter, we can increment to track lifetime creates if needed
+        // but dynamic count is safer for limits. Let's stick to dynamic check above.
+
         res.json({ success: true, id: result.id, profile: result.project });
     } catch (error) {
         console.error(error);
