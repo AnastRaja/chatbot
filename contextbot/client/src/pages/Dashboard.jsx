@@ -62,6 +62,19 @@ const Dashboard = () => {
     }, [selectedProjectId]);
 
 
+
+    // Loading State
+    if (profiles === null) {
+        return (
+            <div className="p-8 h-full flex flex-col items-center justify-center bg-slate-50/50">
+                <div className="animate-pulse flex flex-col items-center">
+                    <div className="h-12 w-12 bg-slate-200 rounded-xl mb-4"></div>
+                    <div className="h-4 w-48 bg-slate-200 rounded mb-2"></div>
+                </div>
+            </div>
+        );
+    }
+
     // Empty State
     if (profilesArray.length === 0) {
         return (

@@ -19,7 +19,7 @@ const AppContext = createContext();
 
 export const AppProvider = ({ children }) => {
     const [user, setUser] = useState(null);
-    const [profiles, setProfiles] = useState({});
+    const [profiles, setProfiles] = useState(null);
     const [loading, setLoading] = useState(true); // Initial load
     const [isAuthenticated, setIsAuthenticated] = useState(false);
 
@@ -91,7 +91,7 @@ export const AppProvider = ({ children }) => {
         if (user) {
             fetchProfiles();
         } else {
-            setProfiles({});
+            setProfiles(null);
         }
     }, [user]);
 
@@ -128,7 +128,7 @@ export const AppProvider = ({ children }) => {
         await signOut(auth);
         setUser(null);
         setIsAuthenticated(false);
-        setProfiles({});
+        setProfiles(null);
     };
 
     const forgotPassword = async (email) => {

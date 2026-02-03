@@ -40,6 +40,27 @@ const ProjectsList = () => {
     const { profiles } = useAppContext();
     const profilesArray = Object.values(profiles || {});
 
+    if (profiles === null) {
+        return (
+            <div className="p-8 max-w-7xl mx-auto">
+                <div className="animate-pulse space-y-8">
+                    <div className="flex justify-between items-center mb-10">
+                        <div className="space-y-2">
+                            <div className="h-8 w-48 bg-slate-200 rounded"></div>
+                            <div className="h-4 w-64 bg-slate-200 rounded"></div>
+                        </div>
+                        <div className="h-10 w-32 bg-slate-200 rounded-lg"></div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {[1, 2, 3].map(i => (
+                            <div key={i} className="h-64 bg-slate-100 rounded-xl border border-slate-200"></div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="p-8 max-w-7xl mx-auto">
             <div className="flex justify-between items-center mb-10">
