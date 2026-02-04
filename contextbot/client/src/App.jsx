@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AppProvider, useAppContext } from './context/AppContext';
+import { Toaster } from 'react-hot-toast';
 import Sidebar from './components/Sidebar';
 import Dashboard from './pages/Dashboard';
 import Leads from './pages/Leads';
@@ -120,6 +121,7 @@ function AppRoutes() {
 function App() {
   return (
     <AppProvider>
+      <Toaster position="top-right" />
       <Router>
         <AppRoutes />
       </Router>

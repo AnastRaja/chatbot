@@ -7,11 +7,13 @@ const UserSchema = new mongoose.Schema({
     provider: { type: String }, // password | google
     subscription: {
         plan: { type: String, enum: ['free', 'starter', 'pro'], default: 'free' },
-        status: { type: String, enum: ['active', 'past_due', 'canceled', 'incomplete'], default: 'active' },
+        status: { type: String, enum: ['active', 'past_due', 'canceled', 'cancelled', 'incomplete', 'on_hold', 'pending', 'failed', 'expired'], default: 'active' },
         billingCycle: { type: String, enum: ['monthly', 'yearly'], default: 'monthly' },
         startDate: { type: Date, default: Date.now },
         endDate: { type: Date },
-        stripeCustomerId: { type: String }
+        stripeCustomerId: { type: String },
+        dodoCustomerId: { type: String },
+        dodoSubscriptionId: { type: String }
     },
     usage: {
         aiResponses: { type: Number, default: 0 },

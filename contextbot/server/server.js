@@ -22,7 +22,11 @@ const PORT = process.env.PORT || 3000;
 
 // Middleware
 app.use(cors());
-app.use(bodyParser.json());
+app.use(bodyParser.json({
+    verify: (req, res, buf) => {
+        req.rawBody = buf;
+    }
+}));
 
 // Security Headers for Firebase Auth (Google Sign In)
 app.use((req, res, next) => {
@@ -47,6 +51,7 @@ app.use('/api/chat', chatLimiter);
 const authRoutes = require('./routes/auth');
 app.use('/api/auth', authRoutes);
 app.use('/api/documents', require('./routes/documents'));
+app.use('/api/payments', require('./routes/payments'));
 app.use('/api', apiRoutes);
 
 // WebSocket logic

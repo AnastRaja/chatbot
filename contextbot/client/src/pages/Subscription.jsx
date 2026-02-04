@@ -1,5 +1,6 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { useAppContext } from '../context/AppContext';
 
 const CheckIcon = ({ className }) => (
     <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -8,10 +9,97 @@ const CheckIcon = ({ className }) => (
 );
 
 const Subscription = () => {
-    const [billingCycle, setBillingCycle] = useState('monthly');
+    const { user, syncUser } = useAppContext();
+    const [loading, setLoading] = useState(false);
+    const location = useLocation();
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        console.log('Subscription Page - User:', user);
+        console.log('Subscription Page - Plan:', user?.subscription?.plan);
+    }, [user]);
+
+    useEffect(() => {
+        const query = new URLSearchParams(location.search);
+        if (query.get('success') === 'true' && query.get('subscription_id')) {
+            verifySubscription(query.get('subscription_id'));
+        }
+    }, [location]);
+
+    const verifySubscription = async (subscriptionId) => {
+        setLoading(true);
+        try {
+            const response = await fetch('/api/payments/verify-subscription', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                },
+                body: JSON.stringify({
+                    subscriptionId,
+                    userId: user?.uid
+                })
+            });
+            const data = await response.json();
+            if (data.success) {
+                alert(`Successfully upgraded to ${data.plan} plan!`);
+                await syncUser(); // Refresh user state from backend
+                navigate('/');
+            } else {
+                alert('Subscription verification failed. Please contact support.');
+            }
+        } catch (error) {
+            console.error('Verification error:', error);
+            alert('Something went wrong during verification.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleSubscribe = async (planKey) => {
+        setLoading(true);
+        try {
+            // Product IDs for Dodo Payments (Test Mode)
+            const productIds = {
+                'starter': 'pdt_0NXkYjtOdaPqAJ2dtluNG',
+                'pro': 'pdt_0NXkYqWNBTn5p9rtp5oGY'
+            };
+
+            const productId = productIds[planKey];
+            if (!productId) return;
+
+            const response = await fetch('/api/payments/checkout-session', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                },
+                body: JSON.stringify({
+                    productId,
+                    userEmail: user?.email,
+                    userId: user?.uid
+                })
+            });
+
+            const data = await response.json();
+            if (data.url) {
+                window.location.href = data.url;
+            } else {
+                alert('Failed to initiate checkout. Please try again.');
+            }
+        } catch (error) {
+            console.error('Checkout error:', error);
+            alert('Something went wrong. Please try again.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const currentPlan = user?.subscription?.plan || 'free';
 
     const plans = [
         {
+            key: 'free',
             name: 'Free',
             description: 'For AI enthusiasts',
             price: '$0',
@@ -23,16 +111,18 @@ const Subscription = () => {
                 'GPT-4o mini',
                 'Branded widget (15 days trial)'
             ],
-            buttonText: 'Current Plan',
+            buttonText: currentPlan === 'free' ? 'Current Plan' : 'Free',
             isPopular: false,
-            highlight: false
+            highlight: false,
+            action: null
         },
         {
+            key: 'starter',
             name: 'Starter',
             description: 'For freelancers & solopreneurs',
-            price: billingCycle === 'monthly' ? '$29' : '$290',
-            originalPrice: billingCycle === 'monthly' ? '$39' : '$390', // Just creating a mock original price for visual match
-            period: billingCycle === 'monthly' ? '/month' : '/year',
+            price: '$29',
+            originalPrice: '$39',
+            period: '/month',
             features: [
                 '5 Projects',
                 '200 MB storage',
@@ -41,16 +131,18 @@ const Subscription = () => {
                 'Unbranded widget',
                 'Email support'
             ],
-            buttonText: 'Upgrade to Starter',
+            buttonText: currentPlan === 'starter' ? 'Current Plan' : 'Upgrade to Starter',
             isPopular: true,
-            highlight: true
+            highlight: true,
+            action: currentPlan === 'starter' ? null : () => handleSubscribe('starter')
         },
         {
+            key: 'pro',
             name: 'Pro',
             description: 'For professionals & teams',
-            price: billingCycle === 'monthly' ? '$89' : '$890',
-            originalPrice: billingCycle === 'monthly' ? '$109' : '$1090', // Mock original price
-            period: billingCycle === 'monthly' ? '/month' : '/year',
+            price: '$89',
+            originalPrice: '$109',
+            period: '/month',
             features: [
                 'Unlimited projects',
                 '1 GB storage',
@@ -58,9 +150,10 @@ const Subscription = () => {
                 'GPT-4o + GPT-4o mini',
                 'Priority support'
             ],
-            buttonText: 'Upgrade to Pro',
+            buttonText: currentPlan === 'pro' ? 'Current Plan' : 'Upgrade to Pro',
             isPopular: false,
-            highlight: false
+            highlight: false,
+            action: currentPlan === 'pro' ? null : () => handleSubscribe('pro')
         }
     ];
 
@@ -71,20 +164,7 @@ const Subscription = () => {
                 <p className="text-slate-500 max-w-2xl mx-auto">
                     Unlock more power and features to build better AI agents.
                 </p>
-
-                {/* Billing Cycle Toggle */}
-                <div className="flex items-center justify-center gap-4 mt-6">
-                    <span className={`text-sm font-medium ${billingCycle === 'monthly' ? 'text-slate-900' : 'text-slate-500'}`}>Monthly</span>
-                    <button
-                        onClick={() => setBillingCycle(billingCycle === 'monthly' ? 'yearly' : 'monthly')}
-                        className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${billingCycle === 'yearly' ? 'bg-blue-600' : 'bg-slate-200'}`}
-                    >
-                        <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${billingCycle === 'yearly' ? 'translate-x-5' : 'translate-x-0'}`} />
-                    </button>
-                    <span className={`text-sm font-medium ${billingCycle === 'yearly' ? 'text-slate-900' : 'text-slate-500'}`}>
-                        Yearly <span className="text-blue-600 text-xs font-bold bg-blue-50 px-2 py-0.5 rounded-full ml-1">Save 20%</span>
-                    </span>
-                </div>
+                {/* Yearly toggle removed as per request */}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-10">
@@ -92,8 +172,8 @@ const Subscription = () => {
                     <div
                         key={index}
                         className={`relative rounded-2xl p-8 transition-all duration-300 ${plan.highlight
-                                ? 'bg-[#0B1120] text-white shadow-xl shadow-blue-900/20 scale-105 border border-slate-700/50'
-                                : 'bg-white text-slate-800 shadow-sm border border-slate-200 hover:shadow-md'
+                            ? 'bg-[#0B1120] text-white shadow-xl shadow-blue-900/20 scale-105 border border-slate-700/50'
+                            : 'bg-white text-slate-800 shadow-sm border border-slate-200 hover:shadow-md'
                             }`}
                     >
                         {plan.isPopular && (
@@ -105,7 +185,6 @@ const Subscription = () => {
                         )}
 
                         <div className="mb-8">
-                            {/* Icon Placeholder based on plan using simple divs/svgs if needed  */}
                             <div className={`w-10 h-10 rounded-lg flex items-center justify-center mb-4 ${plan.highlight ? 'bg-slate-700/50' : 'bg-slate-100'}`}>
                                 {index === 0 && (
                                     <svg className="w-6 h-6 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
@@ -129,16 +208,18 @@ const Subscription = () => {
                                     <span className={`text-lg font-medium line-through decoration-slate-500/50 ${plan.highlight ? 'text-slate-600' : 'text-slate-300'}`}>{plan.originalPrice}</span>
                                 )}
                             </div>
-                            {plan.period && <p className={`text-sm mt-1 ${plan.highlight ? 'text-slate-400' : 'text-slate-500'}`}>billed {billingCycle}</p>}
+                            {plan.period && <p className={`text-sm mt-1 ${plan.highlight ? 'text-slate-400' : 'text-slate-500'}`}>billed {plan.period.replace('/', '')}</p>}
                         </div>
 
                         <button
+                            onClick={plan.action}
+                            disabled={!plan.action || loading}
                             className={`w-full py-3.5 px-4 rounded-xl font-semibold transition-all duration-200 mb-8 ${plan.highlight
-                                    ? 'bg-orange-600 hover:bg-orange-700 text-white shadow-lg shadow-orange-900/20'
-                                    : 'bg-white border-2 border-slate-200 text-slate-700 hover:border-slate-800 hover:text-slate-900'
-                                }`}
+                                ? 'bg-orange-600 hover:bg-orange-700 text-white shadow-lg shadow-orange-900/20'
+                                : 'bg-white border-2 border-slate-200 text-slate-700 hover:border-slate-800 hover:text-slate-900'
+                                } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
                         >
-                            {plan.buttonText}
+                            {loading && plan.action ? 'Processing...' : plan.buttonText}
                         </button>
 
                         <div className="space-y-4">

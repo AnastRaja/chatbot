@@ -32,30 +32,13 @@ export const AppProvider = ({ children }) => {
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
             if (firebaseUser) {
-                try {
-                    const token = await firebaseUser.getIdToken();
-                    // Set default header for all axios requests
-                    axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-
-                    // Sync user with backend
-                    // We only need to do this if we have a token.
-                    // Ideally, we might check if we already have the user in state to avoid redundant calls,
-                    // but for safety on refresh, we call it.
-                    await axios.post('/api/auth/sync');
-
-                    setUser(firebaseUser);
-                    setIsAuthenticated(true);
-                } catch (error) {
-                    console.error("Auth Sync Error", error);
-                    // If sync fails, should we logout? Or just retry?
-                    // For now, we log it.
-                }
+                await syncUser(firebaseUser);
             } else {
                 setUser(null);
                 setIsAuthenticated(false);
                 delete axios.defaults.headers.common['Authorization'];
+                setLoading(false);
             }
-            setLoading(false);
         });
 
         // Setup Axios Interceptor to refresh token if needed (optional but good practice)
@@ -76,6 +59,43 @@ export const AppProvider = ({ children }) => {
             axios.interceptors.request.eject(interceptorId);
         };
     }, []);
+
+    const syncUser = async (firebaseUser = auth.currentUser) => {
+        if (!firebaseUser) return;
+
+        try {
+            const token = await firebaseUser.getIdToken();
+            // Set default header for all axios requests
+            axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+
+            // Sync user with backend
+            const res = await axios.post('/api/auth/sync');
+            const dbUser = res.data.user;
+
+            // Attach Firebase methods to the DB user object so existing calls work
+            if (dbUser) {
+                dbUser.getIdToken = async (forceRefresh) => firebaseUser.getIdToken(forceRefresh);
+                dbUser.reload = async () => firebaseUser.reload();
+                dbUser.emailVerified = firebaseUser.emailVerified; // Ensure this is present for redirects
+                dbUser.photoURL = firebaseUser.photoURL;
+                setUser(dbUser);
+            } else {
+                // Fallback but likely won't have subscription data
+                setUser(firebaseUser);
+            }
+
+            setIsAuthenticated(true);
+        } catch (error) {
+            console.error("Auth Sync Error", error);
+            // Fallback
+            setUser(firebaseUser);
+            setIsAuthenticated(true);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+
 
     const fetchProfiles = async () => {
         if (!user) return;
@@ -162,7 +182,8 @@ export const AppProvider = ({ children }) => {
             googleLogin,
             logout,
             forgotPassword,
-            resetPassword
+            resetPassword,
+            syncUser
         }}>
             {!loading && children}
         </AppContext.Provider>

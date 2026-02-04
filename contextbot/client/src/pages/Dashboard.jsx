@@ -3,23 +3,34 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAppContext } from '../context/AppContext';
 import {
-    LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-    BarChart, Bar, Legend
+    XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+    BarChart, Bar
 } from 'recharts';
+import {
+    Users, Clock, MousePointerClick, ArrowUpRight, ArrowDownRight,
+    MoreHorizontal, Calendar, Filter, Download
+} from 'lucide-react';
 
-const StatCard = ({ title, value, color, icon, trend }) => (
-    <div className="bg-white p-6 rounded-xl shadow-[0_2px_10px_-3px_rgba(6,81,237,0.1)] border border-slate-100/50 hover:shadow-md transition duration-200">
-        <div className="flex items-start justify-between">
-            <div>
-                <p className="text-slate-500 text-sm font-medium mb-1">{title}</p>
-                <div className="flex items-baseline gap-2">
-                    <h3 className="text-2xl font-bold text-slate-800">{value}</h3>
-                    {trend && <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${trend.startsWith('+') ? 'text-green-600 bg-green-50' : 'text-red-600 bg-red-50'}`}>{trend}</span>}
+const StatCard = ({ title, value, trend, icon: Icon, trendValue }) => (
+    <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+        <div className="flex justify-between items-start mb-4">
+            <div className="p-3 bg-gray-50 rounded-xl">
+                <Icon className="w-6 h-6 text-gray-700" />
+            </div>
+            <button className="text-gray-400 hover:text-gray-600">
+                <MoreHorizontal className="w-5 h-5" />
+            </button>
+        </div>
+        <h3 className="text-gray-500 text-sm font-medium mb-1">{title}</h3>
+        <div className="flex items-end gap-2">
+            <h2 className="text-2xl font-bold text-gray-900">{value}</h2>
+            {trend && (
+                <div className={`flex items-center text-xs font-semibold px-2 py-0.5 rounded-full ${trend === 'up' ? 'text-emerald-700 bg-emerald-50' : 'text-rose-700 bg-rose-50'
+                    }`}>
+                    {trend === 'up' ? <ArrowUpRight className="w-3 h-3 mr-1" /> : <ArrowDownRight className="w-3 h-3 mr-1" />}
+                    {trendValue}
                 </div>
-            </div>
-            <div className={`p-3 rounded-lg ${color} bg-opacity-10 text-xl`}>
-                {icon}
-            </div>
+            )}
         </div>
     </div>
 );
@@ -61,15 +72,13 @@ const Dashboard = () => {
         return () => clearInterval(interval);
     }, [selectedProjectId]);
 
-
-
     // Loading State
     if (profiles === null) {
         return (
-            <div className="p-8 h-full flex flex-col items-center justify-center bg-slate-50/50">
+            <div className="p-8 h-full flex flex-col items-center justify-center bg-gray-50/50">
                 <div className="animate-pulse flex flex-col items-center">
-                    <div className="h-12 w-12 bg-slate-200 rounded-xl mb-4"></div>
-                    <div className="h-4 w-48 bg-slate-200 rounded mb-2"></div>
+                    <div className="h-12 w-12 bg-gray-200 rounded-xl mb-4"></div>
+                    <div className="h-4 w-48 bg-gray-200 rounded mb-2"></div>
                 </div>
             </div>
         );
@@ -78,158 +87,244 @@ const Dashboard = () => {
     // Empty State
     if (profilesArray.length === 0) {
         return (
-            <div className="p-8 h-full flex flex-col items-center justify-center bg-slate-50/50">
-                <div className="text-center max-w-2xl animate-fade-in">
-                    <div className="w-20 h-20 bg-blue-100/50 rounded-2xl flex items-center justify-center mx-auto mb-8 shadow-sm">
-                        <svg className="w-10 h-10 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.384-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
-                        </svg>
+            <div className="p-8 h-full flex flex-col items-center justify-center bg-gray-50/50">
+                <div className="text-center max-w-2xl bg-white p-12 rounded-3xl border border-gray-100 shadow-xl shadow-gray-200/50">
+                    <div className="w-20 h-20 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-8">
+                        <Users className="w-10 h-10 text-primary" />
                     </div>
-                    <h1 className="text-3xl font-bold text-slate-800 mb-4 tracking-tight">Welcome to ContextBot</h1>
-                    <p className="text-lg text-slate-500 mb-10 leading-relaxed max-w-lg mx-auto">
-                        Create intelligent AI chat agents for your business in minutes. Start by creating your first project.
+                    <h1 className="text-3xl font-bold text-gray-900 mb-4 tracking-tight">Welcome to OripioFin</h1>
+                    <p className="text-lg text-gray-500 mb-10 leading-relaxed max-w-lg mx-auto">
+                        Your financial operational dashboard is empty. Start by creating a project to track analytics.
                     </p>
-
                     <button
                         onClick={() => navigate('/create-project')}
-                        className="group bg-blue-600 hover:bg-blue-700 text-white px-8 py-3.5 rounded-xl font-semibold shadow-lg shadow-blue-600/20 transition-all hover:-translate-y-0.5"
+                        className="bg-gray-900 hover:bg-black text-white px-8 py-3.5 rounded-xl font-bold transition-all shadow-lg shadow-gray-900/20 hover:-translate-y-1"
                     >
-                        <span className="flex items-center gap-2">
-                            Create First Project
-                            <svg className="w-4 h-4 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                            </svg>
-                        </span>
+                        Create First Project
                     </button>
                 </div>
             </div>
         );
     }
 
-    const selectedProject = profilesArray.find(p => p.id === selectedProjectId);
-
     // Main Dashboard
     return (
-        <div className="p-8 max-w-7xl mx-auto space-y-8">
+        <div className="p-8 max-w-[1600px] mx-auto space-y-8">
             {/* Header & Controls */}
-            <div className="flex flex-col md:flex-row justify-between md:items-end gap-4">
+            <div className="flex flex-col md:flex-row justify-between md:items-center gap-6">
                 <div>
-                    <h2 className="text-2xl font-bold text-slate-800 tracking-tight">Dashboard</h2>
-                    <p className="text-slate-500 text-sm mt-1">Real-time insights for your projects.</p>
+                    <h2 className="text-2xl font-bold text-gray-900 tracking-tight">Financial Overview</h2>
+                    <p className="text-gray-500 text-sm mt-1">Track your key performance indicators in real-time.</p>
                 </div>
 
                 <div className="flex items-center gap-3">
-                    <select
-                        className="bg-white border border-slate-200 text-slate-700 py-2.5 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-sm font-medium shadow-sm transition min-w-[200px]"
-                        value={selectedProjectId}
-                        onChange={(e) => setSelectedProjectId(e.target.value)}
-                    >
-                        {profilesArray.map(p => (
-                            <option key={p.id} value={p.id}>{p.name}</option>
-                        ))}
-                    </select>
+                    <div className="relative">
+                        <select
+                            className="appearance-none bg-white border border-gray-200 text-gray-700 py-2.5 pl-4 pr-10 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 font-medium text-sm shadow-sm hover:border-gray-300 transition-colors min-w-[220px]"
+                            value={selectedProjectId}
+                            onChange={(e) => setSelectedProjectId(e.target.value)}
+                        >
+                            {profilesArray.map(p => (
+                                <option key={p.id} value={p.id}>{p.name}</option>
+                            ))}
+                        </select>
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+                            <ArrowDownRight className="w-4 h-4" />
+                        </div>
+                    </div>
 
-                    <button
-                        onClick={() => navigate('/create-project')}
-                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg font-medium text-sm transition shadow-sm hover:shadow flex items-center gap-2"
-                    >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                        </svg>
-                        New Project
+                    <button className="p-2.5 bg-white border border-gray-200 text-gray-600 rounded-xl hover:bg-gray-50 transition-colors">
+                        <Calendar className="w-5 h-5" />
+                    </button>
+                    <button className="p-2.5 bg-white border border-gray-200 text-gray-600 rounded-xl hover:bg-gray-50 transition-colors">
+                        <Filter className="w-5 h-5" />
                     </button>
                 </div>
             </div>
 
             {loading && !analytics ? (
-                <div className="text-center py-20 text-slate-400">Loading analytics...</div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-pulse">
+                    {[1, 2, 3].map(i => <div key={i} className="h-40 bg-gray-100 rounded-2xl"></div>)}
+                </div>
             ) : analytics ? (
                 <>
-                    {/* Stat Cards */}
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                        <StatCard
-                            title="Total Visitors"
-                            value={analytics.uniqueVisitors}
-                            color="bg-blue-600 text-blue-600"
-                            icon="👥"
-                        />
-                        <StatCard
-                            title="Total Sessions"
-                            value={analytics.totalVisits}
-                            color="bg-indigo-600 text-indigo-600"
-                            icon="📂"
-                        />
-                        <StatCard
-                            title="Avg. Session Duration"
-                            value={`${analytics.avgDuration}s`}
-                            color="bg-emerald-600 text-emerald-600"
-                            icon="⏱"
-                        />
-                        <StatCard
-                            title="Bounce Rate"
-                            value={`${analytics.bounceRate}%`}
-                            color="bg-orange-500 text-orange-600"
-                            icon="📉"
-                        />
-                    </div>
+                    {/* Top Section */}
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                        {/* Green Balance Card (Main Metric) */}
+                        <div className="lg:col-span-4 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-3xl p-8 text-white shadow-xl shadow-emerald-500/20 relative overflow-hidden group">
+                            <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-16 -mt-16 transition-transform group-hover:scale-110" />
+                            <div className="relative z-10">
+                                <div className="flex justify-between items-start mb-8">
+                                    <div>
+                                        <p className="text-emerald-100 font-medium mb-1">Total Visitors</p>
+                                        <h2 className="text-4xl font-bold tracking-tight">{analytics.uniqueVisitors}</h2>
+                                    </div>
+                                    <div className="p-3 bg-white/20 rounded-2xl backdrop-blur-sm">
+                                        <Users className="w-6 h-6 text-white" />
+                                    </div>
+                                </div>
 
-                    {/* Charts Section */}
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        {/* Traffic Chart */}
-                        <div className="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-                            <h3 className="font-bold text-lg text-slate-800 mb-6">Traffic Over Time (Last 7 Days)</h3>
-                            <div className="h-[300px] w-full">
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <LineChart data={analytics.chartData}>
-                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                                        <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12 }} dy={10} />
-                                        <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12 }} />
-                                        <Tooltip
-                                            contentStyle={{ backgroundColor: '#fff', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}
-                                            itemStyle={{ color: '#1e293b' }}
-                                        />
-                                        <Line type="monotone" dataKey="visitors" stroke="#3b82f6" strokeWidth={3} dot={{ r: 4, fill: '#3b82f6', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 6 }} />
-                                    </LineChart>
-                                </ResponsiveContainer>
+                                <div className="flex gap-4 mb-8">
+                                    <div className="flex-1 bg-white/10 rounded-xl p-3 backdrop-blur-sm">
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-300"></div>
+                                            <p className="text-xs text-emerald-100">Avg Duration</p>
+                                        </div>
+                                        <p className="text-lg font-bold">{analytics.avgDuration}s</p>
+                                    </div>
+                                    <div className="flex-1 bg-white/10 rounded-xl p-3 backdrop-blur-sm">
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-rose-300"></div>
+                                            <p className="text-xs text-emerald-100">Bounce</p>
+                                        </div>
+                                        <p className="text-lg font-bold">{analytics.bounceRate}%</p>
+                                    </div>
+                                </div>
+
+                                <div className="flex gap-3">
+                                    <button className="flex-1 bg-white text-emerald-700 py-3 rounded-xl font-bold text-sm hover:bg-emerald-50 transition-colors shadow-sm">
+                                        View Report
+                                    </button>
+                                    <button className="flex-1 bg-emerald-700/50 text-white py-3 rounded-xl font-bold text-sm hover:bg-emerald-700/70 transition-colors backdrop-blur-sm">
+                                        Export
+                                    </button>
+                                </div>
                             </div>
                         </div>
 
-                        {/* Top Pages */}
-                        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-                            <h3 className="font-bold text-lg text-slate-800 mb-4">Top Pages</h3>
-                            <div className="space-y-4">
-                                {analytics.topPages.length > 0 ? (
-                                    analytics.topPages.map((page, idx) => (
-                                        <div key={idx} className="group">
-                                            <div className="flex justify-between items-start mb-1">
-                                                <p className="text-sm font-medium text-slate-700 truncate max-w-[200px]" title={page.url}>
-                                                    {page.url.replace(window.location.origin, '') || page.url}
-                                                </p>
-                                                <span className="text-xs font-semibold bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">{page.visits} visits</span>
-                                            </div>
-                                            <div className="flex justify-between text-xs text-slate-400">
-                                                <span>Duration: {page.avgTime}s</span>
-                                                <span>Bounce: {page.bounceRate}%</span>
-                                            </div>
-                                            {/* Mini bar */}
-                                            <div className="w-full bg-slate-100 h-1.5 rounded-full mt-2 overflow-hidden">
-                                                <div
-                                                    className="bg-blue-500 h-full rounded-full"
-                                                    style={{ width: `${(page.visits / analytics.totalVisits) * 100}%` }}
-                                                ></div>
-                                            </div>
-                                        </div>
-                                    ))
-                                ) : (
-                                    <div className="text-center text-slate-400 py-10">No data available</div>
-                                )}
+                        {/* Secondary Stats */}
+                        <div className="lg:col-span-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            <StatCard
+                                title="Total Sessions"
+                                value={analytics.totalVisits}
+                                trend="up"
+                                trendValue="+12.5%"
+                                icon={MousePointerClick}
+                            />
+                            <StatCard
+                                title="Active Now"
+                                value="24"
+                                trend="up"
+                                trendValue="+4"
+                                icon={Clock}
+                            />
+                            <StatCard
+                                title="Conversion Rate"
+                                value="3.2%"
+                                trend="down"
+                                trendValue="-0.4%"
+                                icon={ArrowUpRight}
+                            />
+
+                            {/* Analytics Chart */}
+                            <div className="md:col-span-2 lg:col-span-3 bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+                                <div className="flex justify-between items-center mb-6">
+                                    <h3 className="font-bold text-gray-800">Traffic Activity</h3>
+                                    <select className="bg-gray-50 border-none text-xs text-gray-500 rounded-lg py-1 px-3 focus:ring-0">
+                                        <option>Last 7 Days</option>
+                                        <option>Last 30 Days</option>
+                                    </select>
+                                </div>
+                                <div className="h-[200px] w-full">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <BarChart data={analytics.chartData}>
+                                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                            <XAxis
+                                                dataKey="date"
+                                                axisLine={false}
+                                                tickLine={false}
+                                                tick={{ fill: '#94a3b8', fontSize: 11 }}
+                                                dy={10}
+                                            />
+                                            <YAxis
+                                                axisLine={false}
+                                                tickLine={false}
+                                                tick={{ fill: '#94a3b8', fontSize: 11 }}
+                                            />
+                                            <Tooltip
+                                                cursor={{ fill: '#f8fafc' }}
+                                                contentStyle={{ backgroundColor: '#fff', borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }}
+                                            />
+                                            <Bar
+                                                dataKey="visitors"
+                                                fill="#10b981"
+                                                radius={[4, 4, 0, 0]}
+                                                barSize={32}
+                                            />
+                                        </BarChart>
+                                    </ResponsiveContainer>
+                                </div>
                             </div>
+                        </div>
+                    </div>
+
+                    {/* Bottom Section: "Transactions" style table for Top Pages */}
+                    <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
+                        <div className="p-6 border-b border-gray-50 flex justify-between items-center">
+                            <h3 className="font-bold text-gray-800">Top Visited Pages</h3>
+                            <button className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-900 font-medium">
+                                <Download className="w-4 h-4" />
+                                Download CSV
+                            </button>
+                        </div>
+                        <div className="overflow-x-auto">
+                            <table className="w-full">
+                                <thead className="bg-gray-50/50">
+                                    <tr className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                                        <th className="px-6 py-4">Page URL</th>
+                                        <th className="px-6 py-4">Visits</th>
+                                        <th className="px-6 py-4">Avg Duration</th>
+                                        <th className="px-6 py-4">Bounce Rate</th>
+                                        <th className="px-6 py-4 text-right">Performance</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-50">
+                                    {analytics.topPages.length > 0 ? (
+                                        analytics.topPages.map((page, idx) => (
+                                            <tr key={idx} className="hover:bg-gray-50/50 transition-colors">
+                                                <td className="px-6 py-4">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-gray-500 font-bold text-xs">
+                                                            P{idx + 1}
+                                                        </div>
+                                                        <span className="font-medium text-gray-700 max-w-[200px] truncate" title={page.url}>
+                                                            {page.url.replace(window.location.origin, '') || page.url}
+                                                        </span>
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4 font-semibold text-gray-700">{page.visits}</td>
+                                                <td className="px-6 py-4 text-gray-500">{page.avgTime}s</td>
+                                                <td className="px-6 py-4">
+                                                    <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${Number(page.bounceRate) < 40 ? 'bg-emerald-50 text-emerald-700' :
+                                                        Number(page.bounceRate) < 70 ? 'bg-yellow-50 text-yellow-700' :
+                                                            'bg-rose-50 text-rose-700'
+                                                        }`}>
+                                                        {page.bounceRate}%
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-4 text-right">
+                                                    <div className="w-24 ml-auto bg-gray-100 h-1.5 rounded-full overflow-hidden">
+                                                        <div
+                                                            className="bg-primary h-full rounded-full"
+                                                            style={{ width: `${(page.visits / analytics.totalVisits) * 100}%` }}
+                                                        ></div>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))
+                                    ) : (
+                                        <tr>
+                                            <td colSpan={5} className="px-6 py-8 text-center text-gray-400">
+                                                No page data available yet.
+                                            </td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </>
             ) : null}
-
-            {/* Quick Actions / Recent Activity could go here */}
         </div>
     );
 };
