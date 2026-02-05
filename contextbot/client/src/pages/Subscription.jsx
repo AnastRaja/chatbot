@@ -14,6 +14,9 @@ const Subscription = () => {
     const location = useLocation();
     const navigate = useNavigate();
 
+    // Use the backend URL from environment variables
+    const API_URL = import.meta.env.VITE_API_URL || '';
+
     useEffect(() => {
         console.log('Subscription Page - User:', user);
         console.log('Subscription Page - Plan:', user?.subscription?.plan);
@@ -29,7 +32,7 @@ const Subscription = () => {
     const verifySubscription = async (subscriptionId) => {
         setLoading(true);
         try {
-            const response = await fetch('/api/payments/verify-subscription', {
+            const response = await fetch(`${API_URL}/api/payments/verify-subscription`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -68,7 +71,7 @@ const Subscription = () => {
             const productId = productIds[planKey];
             if (!productId) return;
 
-            const response = await fetch('/api/payments/checkout-session', {
+            const response = await fetch(`${API_URL}/api/payments/checkout-session`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -77,7 +80,8 @@ const Subscription = () => {
                 body: JSON.stringify({
                     productId,
                     userEmail: user?.email,
-                    userId: user?.uid
+                    userId: user?.uid,
+                    returnUrl: window.location.origin
                 })
             });
 

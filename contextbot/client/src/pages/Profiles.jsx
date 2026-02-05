@@ -78,7 +78,7 @@ const Profiles = () => {
                         <div className="mt-4 pt-4 border-t border-slate-100">
                             <p className="text-xs font-semibold uppercase text-slate-400 mb-2">Embed Code</p>
                             <div className="bg-slate-900 text-slate-300 p-3 rounded text-xs font-mono break-all md:break-normal">
-                                {`<script src="http://localhost:3000/widget.js" data-id="${profile.id}"></script>`}
+                                {`<script src="${window.location.origin}/widget.js" data-id="${profile.id}"></script>`}
                             </div>
                         </div>
                     </div>

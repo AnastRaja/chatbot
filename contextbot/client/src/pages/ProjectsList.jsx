@@ -138,7 +138,7 @@ const ProjectsList = () => {
                                 </div>
 
                                 <CopyableCode
-                                    code={`<script src="http://localhost:3000/widget.js" data-id="${project.id}" data-color="${project.context?.widgetColor || '#2563eb'}"></script>`}
+                                    code={`<script src="${window.location.origin}/widget.js" data-id="${project.id}" data-color="${project.context?.widgetColor || '#2563eb'}"></script>`}
                                 />
                             </div>
 

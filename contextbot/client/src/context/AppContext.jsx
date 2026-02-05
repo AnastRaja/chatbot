@@ -105,7 +105,13 @@ export const AppProvider = ({ children }) => {
             const res = await axios.get('/api/profiles', {
                 // headers: { Authorization: `Bearer ${token}` } 
             });
-            setProfiles(res.data);
+            // Guard against HTML/String responses (404/500 redirects)
+            if (res.data && typeof res.data === 'object') {
+                setProfiles(res.data);
+            } else {
+                console.error('Invalid profiles data received:', res.data);
+                setProfiles({});
+            }
         } catch (error) {
             console.error('Failed to fetch profiles', error);
         }

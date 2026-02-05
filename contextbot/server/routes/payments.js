@@ -13,7 +13,7 @@ const client = new DodoPayments({
 // Helper to create checkout session
 router.post('/checkout-session', async (req, res) => {
     try {
-        const { productId, userEmail, userId } = req.body;
+        const { productId, userEmail, userId, returnUrl } = req.body;
 
         if (!productId || !userEmail) {
             return res.status(400).json({ error: 'Missing productId or userEmail' });
@@ -35,7 +35,7 @@ router.post('/checkout-session', async (req, res) => {
             product_id: productId,
             quantity: 1,
             payment_link: true,
-            return_url: `${process.env.CLIENT_URL || 'http://localhost:5173'}/subscription?success=true`,
+            return_url: `${returnUrl || req.get('origin') || process.env.CLIENT_URL || 'http://localhost:5173'}/subscription?success=true`,
             metadata: {
                 userId: userId
             }

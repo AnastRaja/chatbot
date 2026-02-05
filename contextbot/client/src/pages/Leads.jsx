@@ -8,7 +8,12 @@ const Leads = () => {
         const fetchLeads = async () => {
             try {
                 const res = await axios.get('/api/leads');
-                setLeads(res.data);
+                if (Array.isArray(res.data)) {
+                    setLeads(res.data);
+                } else {
+                    console.error("Expected array of leads, got:", typeof res.data);
+                    setLeads([]);
+                }
             } catch (e) {
                 console.error(e);
             }
