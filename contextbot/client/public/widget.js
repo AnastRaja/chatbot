@@ -133,7 +133,7 @@
                     pointerEvents: 'all'
                 });
                 bubble.style.transform = 'rotate(90deg)';
-                localStorage.setItem('contextbot_has_opened_' + bizId, 'true');
+                sessionStorage.setItem('contextbot_has_opened_' + bizId, 'true');
 
                 // Resend context on open to capture any page updates
                 sendContext();
@@ -151,9 +151,14 @@
         bubble.addEventListener('click', () => toggleWidget());
 
         // 5. Auto-Open Logic
-        // Check if user has seen widget before
+        // Check if user has seen widget before (Session Storage is better for testing/user experience per session)
         const STORAGE_KEY = 'contextbot_has_opened_' + bizId;
-        const hasOpened = localStorage.getItem(STORAGE_KEY);
+        const hasOpened = sessionStorage.getItem(STORAGE_KEY);
+
+        console.log('ContextBot Config:', {
+            autoOpenDelay: config.autoOpenDelay,
+            hasOpened: hasOpened
+        });
 
         if (!hasOpened && config.autoOpenDelay > 0) {
             setTimeout(() => {

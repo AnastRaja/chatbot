@@ -46,7 +46,9 @@ const Leads = () => {
                         <tr>
                             <th className="p-4 font-medium border-b">Timestamp</th>
                             <th className="p-4 font-medium border-b">Business</th>
+                            <th className="p-4 font-medium border-b">Client Name</th>
                             <th className="p-4 font-medium border-b">Contact Info</th>
+                            <th className="p-4 font-medium border-b">Country</th>
                             <th className="p-4 font-medium border-b">Context</th>
                             <th className="p-4 font-medium border-b w-10"></th>
                         </tr>
@@ -54,33 +56,37 @@ const Leads = () => {
                     <tbody className="text-sm divide-y divide-slate-100">
                         {leads.length === 0 && (
                             <tr>
-                                <td colSpan="4" className="p-8 text-center text-slate-400">No leads captured yet.</td>
+                                <td colSpan="7" className="p-8 text-center text-slate-400">No leads captured yet.</td>
                             </tr>
                         )}
                         {leads.map(lead => {
                             // Backend Compatibility Adapter
                             const details = lead.contactDetails || lead.details || {};
-                            const emails = details.emails || (details.email ? [details.email] : []);
-                            const phones = details.phones || (details.phone ? [details.phone] : []);
+                            const emails = Array.isArray(details.emails) ? details.emails : (details.email ? [details.email] : []);
+                            const phones = Array.isArray(details.phones) ? details.phones : (details.phone ? [details.phone] : []);
                             const date = lead.createdAt || lead.timestamp;
+                            const clientName = details.name || '-';
+                            const country = details.country || '-';
 
                             return (
                                 <tr key={lead._id || lead.id} className="hover:bg-slate-50">
-                                    <td className="p-4 text-slate-600">
+                                    <td className="p-4 text-slate-600 whitespace-nowrap">
                                         {date ? new Date(date).toLocaleString() : 'N/A'}
                                     </td>
                                     <td className="p-4 font-medium text-slate-900">{lead.businessName || lead.projectId || 'Unknown'}</td>
+                                    <td className="p-4 text-slate-700 font-medium">{clientName}</td>
                                     <td className="p-4">
                                         {emails.length > 0 ? (
-                                            emails.map((e, i) => <div key={i} className="text-blue-600">{e}</div>)
+                                            emails.map((e, i) => <div key={`e-${i}`} className="text-blue-600 block">{e}</div>)
                                         ) : (
-                                            <span className="text-slate-400 text-xs">No email</span>
+                                            <span className="text-slate-400 text-xs block">No email</span>
                                         )}
                                         {phones.length > 0 && (
-                                            phones.map((p, i) => <div key={i} className="text-green-600">{p}</div>)
+                                            phones.map((p, i) => <div key={`p-${i}`} className="text-green-600 block mt-1">{p}</div>)
                                         )}
                                     </td>
-                                    <td className="p-4 text-slate-500 italic max-w-xs truncate">
+                                    <td className="p-4 text-slate-600">{country}</td>
+                                    <td className="p-4 text-slate-500 italic max-w-xs truncate" title={lead.rawMessage}>
                                         "{lead.rawMessage}"
                                     </td>
                                     <td className="p-4 text-right">

@@ -2,6 +2,7 @@ import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import { LayoutDashboard, FolderKanban, Users, MessageSquare, Activity, CreditCard, LogOut, Zap } from 'lucide-react';
+import Logo from './Logo';
 
 const Sidebar = () => {
     const location = useLocation();
@@ -23,14 +24,11 @@ const Sidebar = () => {
     };
 
     return (
-        <aside className="w-[260px] bg-white border-r border-gray-200 text-gray-500 min-h-screen flex flex-col font-sans z-50 transition-all duration-300">
+        <aside className="w-[260px] bg-white border-r border-gray-200 text-gray-500 h-screen flex flex-col font-sans z-50 transition-all duration-300 fixed left-0 top-0">
             {/* Logo Section */}
-            <div className="h-20 flex items-center px-6 border-b border-gray-100">
+            <div className="h-20 flex items-center justify-center px-6 border-b border-gray-100">
                 <div className="flex items-center gap-3 cursor-pointer">
-                    <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center shadow-lg shadow-primary/20">
-                        <Activity className="w-5 h-5 text-white" />
-                    </div>
-                    <span className="text-xl font-bold text-gray-900 tracking-tight">OripioFin</span>
+                    <Logo className="h-8 w-[153px] mx-auto" />
                 </div>
             </div>
 
@@ -59,7 +57,7 @@ const Sidebar = () => {
             </nav>
 
             {/* Upgrade Pro Card */}
-            <div className="px-4 pb-4">
+            <div className="px-4 pb-4 hidden">
                 <div className="bg-gray-900 rounded-2xl p-4 text-center relative overflow-hidden group">
                     {/* Abstract shape */}
                     <div className="absolute top-0 right-0 w-16 h-16 bg-white/5 rounded-full blur-xl -mr-4 -mt-4 transition-transform group-hover:scale-110" />

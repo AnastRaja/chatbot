@@ -174,6 +174,53 @@ export const AppProvider = ({ children }) => {
         await confirmPasswordReset(auth, oobCode, newPassword);
     };
 
+    // Auto-Logout Service
+    useEffect(() => {
+        const INACTIVITY_LIMIT = 60 * 60 * 1000; // 1 hour
+
+        const updateActivity = () => {
+            if (user) {
+                const now = Date.now();
+                const last = Number(localStorage.getItem('lastActivity') || 0);
+                // Throttle: only update if > 30 seconds have passed to save performance
+                if (now - last > 30 * 1000) {
+                    localStorage.setItem('lastActivity', now.toString());
+                }
+            }
+        };
+
+        const checkInactivity = () => {
+            const lastActivity = Number(localStorage.getItem('lastActivity'));
+            if (lastActivity && (Date.now() - lastActivity > INACTIVITY_LIMIT) && user) {
+                console.log('User inactive for >1 hour. Logging out...');
+                logout();
+            }
+        };
+
+        // Check every minute
+        const intervalId = setInterval(checkInactivity, 60 * 1000);
+
+        // Listeners for activity
+        window.addEventListener('mousemove', updateActivity);
+        window.addEventListener('keydown', updateActivity);
+        window.addEventListener('click', updateActivity);
+
+        // Initialize lastActivity on mount/login
+        if (user) {
+            const current = localStorage.getItem('lastActivity');
+            if (!current) {
+                localStorage.setItem('lastActivity', Date.now().toString());
+            }
+        }
+
+        return () => {
+            clearInterval(intervalId);
+            window.removeEventListener('mousemove', updateActivity);
+            window.removeEventListener('keydown', updateActivity);
+            window.removeEventListener('click', updateActivity);
+        };
+    }, [user]); // Re-run if user changes (login/logout)
+
     return (
         <AppContext.Provider value={{
             user,

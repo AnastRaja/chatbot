@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AppProvider, useAppContext } from './context/AppContext';
 import { Toaster } from 'react-hot-toast';
+import useAutoLogout from './hooks/useAutoLogout';
 import Sidebar from './components/Sidebar';
 import Dashboard from './pages/Dashboard';
 import Leads from './pages/Leads';
@@ -29,7 +30,7 @@ const ProtectedRoute = ({ children }) => {
 const MainLayout = ({ children }) => (
   <div className="flex bg-gray-100 min-h-screen font-sans">
     <Sidebar />
-    <main className="flex-1 overflow-auto">
+    <main className="flex-1 overflow-auto ml-[260px]">
       {children}
     </main>
   </div>
@@ -121,11 +122,27 @@ function AppRoutes() {
 function App() {
   return (
     <AppProvider>
+      <AppContent />
+    </AppProvider>
+  );
+}
+
+function AutoLogoutHandler() {
+  useAutoLogout(); // Default 30 minutes
+  return null;
+}
+
+function AppContent() {
+
+
+  return (
+    <>
       <Toaster position="top-right" />
       <Router>
+        <AutoLogoutHandler />
         <AppRoutes />
       </Router>
-    </AppProvider>
+    </>
   );
 }
 

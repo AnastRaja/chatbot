@@ -288,7 +288,7 @@ const Dashboard = () => {
                                                             P{idx + 1}
                                                         </div>
                                                         <span className="font-medium text-gray-700 max-w-[200px] truncate" title={page.url}>
-                                                            {page.url.replace(window.location.origin, '') || page.url}
+                                                            {typeof page.url === 'string' ? page.url.replace(window.location.origin, '') : (page.url || 'Unknown Page')}
                                                         </span>
                                                     </div>
                                                 </td>

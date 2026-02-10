@@ -1,0 +1,23 @@
+{
+  "leadsCount": 1,
+  "leads": [
+    {
+      "projectId": "test-biz-id-777",
+      "chatSessionId": "mock-session-id-123",
+      "rawMessage": "Hi, my name is John Test, email is john.test@example.com",
+      "contactDetails": {
+        "isLead": true,
+        "emails": [
+          "john.test@example.com"
+        ],
+        "phones": [
+          "5550199"
+        ],
+        "name": "John Test",
+        "country": "Canada"
+      },
+      "businessName": "Test Business Inc.",
+      "_id": "mock-lead-id-1770751053988"
+    }
+  ]
+}

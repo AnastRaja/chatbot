@@ -6,9 +6,19 @@ ContextBot is a comprehensive Micro-SaaS solution that allows businesses to crea
 
 - **Business Profiles**: Create profiles manually or by crawling an existing website URL.
 - **AI Chat Widget**: Embeddable widget acting as a customer support agent.
+- **Context Awareness**: Automatically detects the visitor's current page (URL, Title, Content) to provide relevant answers.
 - **Lead Capture**: Automatically detects and acts on emails/phones shared in chat.
 - **Real-time Dashboard**: Monitor active chats and captured leads.
 - **Zero-Config**: Uses an in-memory data store for easy prototype deployment.
+
+## Context Awareness
+
+The widget is "context-aware," meaning it automatically captures the following information from the page the visitor is currently viewing:
+- **Page Title**: The title of the current browser tab.
+- **URL**: The exact web address the visitor is on.
+- **Page Content**: A snippet of the text content from the page body (first 5000 characters).
+
+This allows the AI to answer specific questions like "What is the price on *this* page?" or "Explain the features listed here" without the user needing to provide context. This happens automatically when the widget loads; no extra configuration is required.
 
 ## Prerequisites
 

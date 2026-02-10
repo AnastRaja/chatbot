@@ -116,7 +116,7 @@
         const input = document.getElementById('user-input');
 
         // Session ID storage
-        let chatId = localStorage.getItem('contextbot_chat_id');
+        let chatId = sessionStorage.getItem('contextbot_chat_id');
         let pageContext = null;
 
         // Listen for context from parent widget.js
@@ -175,7 +175,7 @@
 
                 if (data.chatId) {
                     chatId = data.chatId;
-                    localStorage.setItem('contextbot_chat_id', chatId);
+                    sessionStorage.setItem('contextbot_chat_id', chatId);
                 }
 
                 document.getElementById(loadingId).remove();

@@ -172,8 +172,13 @@ class ChatService {
 
         if (finalLeadData.isLead) {
             // Deduplicate input data immediately
-            if (finalLeadData.emails) finalLeadData.emails = [...new Set(finalLeadData.emails)];
-            if (finalLeadData.phones) finalLeadData.phones = [...new Set(finalLeadData.phones)];
+            if (finalLeadData.emails) {
+                finalLeadData.emails = [...new Set(finalLeadData.emails.map(e => e.toLowerCase()))];
+            }
+            if (finalLeadData.phones) {
+                // Normalize phones: remove non-digits
+                finalLeadData.phones = [...new Set(finalLeadData.phones.map(p => p.replace(/\D/g, '')))].filter(p => p.length >= 7);
+            }
 
             // Find existing lead: Check Session ID OR matching Email/Phone in this project
             const searchConditions = [{ chatSessionId: session._id }];
@@ -214,8 +219,11 @@ class ChatService {
                 if (finalLeadData.country) updatedDetails.country = finalLeadData.country;
 
                 existing.contactDetails = updatedDetails;
-                // Update session ID to latest interaction if different? Maybe not, keep original trace.
-                // But we could update a "lastSessionId" if we had one.
+
+                // Ensure businessName is populated if missing
+                if (!existing.businessName && project.name) {
+                    existing.businessName = project.name;
+                }
 
                 await existing.save();
                 console.log(`[Lead] Updated lead for project ${project.id}. Data:`, JSON.stringify(updatedDetails));
@@ -224,7 +232,8 @@ class ChatService {
                     projectId: project.id,
                     chatSessionId: session._id,
                     rawMessage: text, // First context
-                    contactDetails: finalLeadData // Already deduplicated above
+                    contactDetails: finalLeadData, // Already deduplicated above
+                    businessName: project.name || 'Unknown Business'
                 });
                 console.log(`[Lead] New lead captured for project ${project.id}`);
             }

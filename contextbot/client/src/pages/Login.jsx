@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
+import Logo from '../components/Logo';
 
 const Login = () => {
     const navigate = useNavigate();
@@ -59,13 +60,13 @@ const Login = () => {
         <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 font-sans">
             <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-8 md:p-10">
                 <div className="text-center mb-8">
-                    <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-blue-100 text-blue-600 mb-4">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
-                        </svg>
+                    <div className="text-center mb-8">
+                        <div className="flex justify-center mb-6">
+                            <Logo className="h-12 w-auto" />
+                        </div>
+                        <h1 className="text-3xl font-bold text-slate-900 mb-2">Welcome Back</h1>
+                        <p className="text-slate-500">Sign in to access your dashboard</p>
                     </div>
-                    <h1 className="text-3xl font-bold text-slate-900 mb-2">Welcome Back</h1>
-                    <p className="text-slate-500">Sign in to access your dashboard</p>
                 </div>
 
                 {/* Google Login Buutton */}

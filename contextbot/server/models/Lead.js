@@ -16,6 +16,7 @@ const LeadSchema = new mongoose.Schema({
         default: {}
     },
     source: { type: String, default: 'chat_widget' },
+    businessName: String,
     status: {
         type: String,
         enum: ['new', 'contacted', 'qualified', 'converted', 'archived'],
