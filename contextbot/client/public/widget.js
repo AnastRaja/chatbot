@@ -17,7 +17,12 @@
     };
 
     const src = scriptTag.src;
-    const host = src.substring(0, src.indexOf('/widget.js'));
+    let host = src.substring(0, src.indexOf('/widget.js'));
+
+    // If not local, use production backend
+    if (!host.includes('localhost') && !host.includes('127.0.0.1')) {
+        host = 'https://chatbot-op25.onrender.com';
+    }
 
     // Initialize Widget
     async function init() {
