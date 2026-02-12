@@ -4,7 +4,7 @@ import './index.css'
 import App from './App.jsx'
 import axios from 'axios';
 
-axios.defaults.baseURL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+axios.defaults.baseURL = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? 'https://chatbot-op25.onrender.com' : 'http://localhost:3000');
 
 
 createRoot(document.getElementById('root')).render(

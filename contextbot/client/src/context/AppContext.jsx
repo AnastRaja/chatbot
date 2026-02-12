@@ -15,10 +15,7 @@ import {
 } from 'firebase/auth';
 import { auth } from '../firebase';
 
-// Set base URL for production if provided
-if (import.meta.env.VITE_API_URL) {
-    axios.defaults.baseURL = import.meta.env.VITE_API_URL;
-}
+
 
 const AppContext = createContext();
 

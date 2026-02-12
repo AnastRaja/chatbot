@@ -182,7 +182,7 @@ const Subscription = () => {
                     >
                         {plan.isPopular && (
                             <div className="absolute top-0 right-0 -mr-[1px] -mt-3.5">
-                                <span className="bg-orange-500 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide shadow-md">
+                                <span className="bg-emerald-400 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide shadow-md">
                                     Most Popular
                                 </span>
                             </div>
@@ -219,7 +219,7 @@ const Subscription = () => {
                             onClick={plan.action}
                             disabled={!plan.action || loading}
                             className={`w-full py-3.5 px-4 rounded-xl font-semibold transition-all duration-200 mb-8 ${plan.highlight
-                                ? 'bg-orange-600 hover:bg-orange-700 text-white shadow-lg shadow-orange-900/20'
+                                ? 'bg-emerald-400 hover:bg-emerald-500 text-white shadow-lg shadow-orange-900/20'
                                 : 'bg-white border-2 border-slate-200 text-slate-700 hover:border-slate-800 hover:text-slate-900'
                                 } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
                         >

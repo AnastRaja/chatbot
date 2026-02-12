@@ -291,7 +291,7 @@ const EditProject = () => {
                     <button
                         type="submit"
                         disabled={loading}
-                        className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-semibold disabled:opacity-50 transition"
+                        className="flex-1 bg-gray-900 hover:bg-gray-800 text-white py-3 rounded-lg font-semibold disabled:opacity-50 transition"
                     >
                         {loading ? 'Updating...' : 'Update Project'}
                     </button>

@@ -1,16 +1,19 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
+import Logo from '../components/Logo';
 
 const Register = () => {
     const navigate = useNavigate();
     const { register, googleLogin } = useAppContext();
+
     const [formData, setFormData] = useState({
         name: '',
         email: '',
         password: '',
         confirmPassword: ''
     });
+
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
 
@@ -19,22 +22,20 @@ const Register = () => {
         setError('');
 
         if (formData.password !== formData.confirmPassword) {
-            setError('Passwords do not match');
+            setError('Passwords do not match.');
             return;
         }
 
         if (formData.password.length < 6) {
-            setError('Password must be at least 6 characters');
+            setError('Password must be at least 6 characters.');
             return;
         }
 
         setLoading(true);
         try {
             await register(formData.email, formData.password, formData.name);
-            setLoading(false);
             navigate('/');
         } catch (err) {
-            // Handle Firebase Errors (e.g., email-already-in-use)
             if (err.code === 'auth/email-already-in-use') {
                 setError('Email is already registered. Please login.');
             } else {
@@ -56,135 +57,164 @@ const Register = () => {
     };
 
     return (
-        <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 font-sans">
-            <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-8 md:p-10">
-                <div className="text-center mb-8">
-                    <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-blue-100 text-blue-600 mb-4">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zM4 19.235v-.11a6.375 6.375 0 0112.75 0v.109A12.318 12.318 0 0110.374 21c-2.331 0-4.512-.645-6.374-1.766z" />
-                        </svg>
-                    </div>
-                    <h1 className="text-3xl font-bold text-slate-900 mb-2">Create Account</h1>
-                    <p className="text-slate-500">Join ContextBot for free today</p>
+        <div className="min-h-screen flex bg-white font-sans">
+            {/* Left Side */}
+            <div className="hidden lg:flex w-1/2 bg-gradient-to-br from-green-600 to-green-900 p-12 flex-col justify-between relative overflow-hidden">
+                {/* <div className="relative z-10">
+                    <Logo className="h-10 w-auto text-white" />
+                </div> */}
+
+                <div className="absolute inset-0 opacity-10">
+                    <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-white rounded-full blur-3xl" />
+                    <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-white rounded-full blur-3xl" />
                 </div>
 
-                <button
-                    type="button"
-                    onClick={handleGoogleRegister}
-                    className="w-full flex items-center justify-center gap-3 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 font-semibold py-3 px-4 rounded-xl transition duration-200 mb-6 group"
-                >
-                    <img
-                        src="https://www.svgrepo.com/show/475656/google-color.svg"
-                        className="w-5 h-5 group-hover:scale-110 transition-transform"
-                        alt="Google logo"
-                    />
-                    <span>Sign up with Google</span>
-                </button>
+                <div className="relative z-10 text-white max-w-lg">
+                    <h1 className="text-5xl font-bold mb-6 leading-tight">
+                        Build faster with ContextBot
+                    </h1>
+                    <p className="text-green-100 text-lg mb-8">
+                        Create your account and start converting visitors into qualified leads.
+                    </p>
 
-                <div className="relative mb-6">
-                    <div className="absolute inset-0 flex items-center">
-                        <div className="w-full border-t border-slate-200"></div>
-                    </div>
-                    <div className="relative flex justify-center text-sm">
-                        <span className="px-2 bg-white text-slate-500">Or register with email</span>
-                    </div>
-                </div>
-
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    {error && (
-                        <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl text-sm flex items-start">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 mt-0.5 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
-                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                            </svg>
-                            {error}
+                    <div className="flex gap-4 items-center opacity-80">
+                        <div className="flex -space-x-4">
+                            {[1, 2, 3, 4].map((i) => (
+                                <div
+                                    key={i}
+                                    className="w-10 h-10 rounded-full border-2 border-green-800 bg-green-700 flex items-center justify-center text-xs font-bold"
+                                >
+                                    U{i}
+                                </div>
+                            ))}
                         </div>
-                    )}
+                        <span className="text-sm font-medium">
+                            Trusted by teams everywhere
+                        </span>
+                    </div>
+                </div>
 
-                    <div>
-                        <label className="block text-sm font-semibold text-slate-700 mb-1.5">
-                            Full Name
-                        </label>
+                <div className="relative z-10 flex gap-6 text-green-200 text-sm font-medium">
+                    <span>© 2024 ContextBot</span>
+                    <span>Privacy Policy</span>
+                    <span>Terms of Service</span>
+                </div>
+            </div>
+
+            {/* Right Side */}
+            <div className="w-full lg:w-1/2 flex items-center justify-center p-8 md:p-12 lg:p-16">
+                <div className="w-full max-w-md space-y-8">
+                    <div className="text-center lg:text-left">
+                        <h2 className="text-3xl font-bold text-gray-900 tracking-tight">
+                            Create your account
+                        </h2>
+                        <p className="mt-2 text-gray-500">
+                            Sign up to get started with ContextBot.
+                        </p>
+                    </div>
+
+                    <form onSubmit={handleSubmit} className="space-y-6">
+                        {error && (
+                            <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl text-sm flex items-start">
+                                <svg className="h-5 w-5 mr-2 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
+                                    <path
+                                        fillRule="evenodd"
+                                        d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                                        clipRule="evenodd"
+                                    />
+                                </svg>
+                                {error}
+                            </div>
+                        )}
+
                         <input
                             type="text"
                             required
-                            className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
-                            placeholder="John Doe"
+                            placeholder="Full name"
+                            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 outline-none"
                             value={formData.name}
-                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                            onChange={(e) =>
+                                setFormData({ ...formData, name: e.target.value })
+                            }
                         />
-                    </div>
 
-                    <div>
-                        <label className="block text-sm font-semibold text-slate-700 mb-1.5">
-                            Email Address
-                        </label>
                         <input
                             type="email"
                             required
-                            className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
-                            placeholder="you@company.com"
+                            placeholder="Email address"
+                            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 outline-none"
                             value={formData.email}
-                            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                            onChange={(e) =>
+                                setFormData({ ...formData, email: e.target.value })
+                            }
                         />
-                    </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-sm font-semibold text-slate-700 mb-1.5">
-                                Password
-                            </label>
-                            <input
-                                type="password"
-                                required
-                                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
-                                placeholder="6+ chars"
-                                value={formData.password}
-                                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                            />
-                        </div>
+                        <input
+                            type="password"
+                            required
+                            placeholder="Password"
+                            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 outline-none"
+                            value={formData.password}
+                            onChange={(e) =>
+                                setFormData({ ...formData, password: e.target.value })
+                            }
+                        />
 
-                        <div>
-                            <label className="block text-sm font-semibold text-slate-700 mb-1.5">
-                                Confirm
-                            </label>
-                            <input
-                                type="password"
-                                required
-                                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
-                                placeholder="Repeat"
-                                value={formData.confirmPassword}
-                                onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                            />
-                        </div>
-                    </div>
+                        <input
+                            type="password"
+                            required
+                            placeholder="Confirm password"
+                            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 outline-none"
+                            value={formData.confirmPassword}
+                            onChange={(e) =>
+                                setFormData({
+                                    ...formData,
+                                    confirmPassword: e.target.value
+                                })
+                            }
+                        />
 
-                    <button
-                        type="submit"
-                        disabled={loading}
-                        className="w-full bg-blue-600 text-white py-3 rounded-xl font-semibold hover:bg-blue-700 disabled:opacity-70 disabled:cursor-not-allowed transition transform active:scale-[0.98] shadow-md shadow-blue-200 mt-2"
-                    >
-                        {loading ? (
-                            <span className="flex items-center justify-center">
-                                <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
-                                Creating Account...
-                            </span>
-                        ) : 'Sign Up'}
-                    </button>
-                </form>
-
-                <div className="mt-8 text-center bg-slate-50 p-4 rounded-xl">
-                    <p className="text-slate-600 text-sm">
-                        Already have an account?{' '}
                         <button
-                            onClick={() => navigate('/login')}
-                            className="text-blue-600 hover:underline font-semibold"
+                            type="submit"
+                            disabled={loading}
+                            className="w-full bg-green-600 text-white py-3.5 rounded-xl font-bold shadow-lg shadow-green-200 hover:bg-green-700 disabled:opacity-70 transition"
                         >
-                            Log in
+                            {loading ? 'Creating account…' : 'Sign up'}
                         </button>
-                    </p>
+
+                        <div className="relative my-6">
+                            <div className="absolute inset-0 flex items-center">
+                                <div className="w-full border-t border-gray-200"></div>
+                            </div>
+                            <div className="relative flex justify-center text-sm">
+                                <span className="px-4 bg-white text-gray-500">Or</span>
+                            </div>
+                        </div>
+
+                        <button
+                            type="button"
+                            onClick={handleGoogleRegister}
+                            className="w-full flex items-center justify-center gap-3 bg-white border border-gray-200 py-3 rounded-xl font-semibold hover:bg-gray-50"
+                        >
+                            <img
+                                src="https://www.svgrepo.com/show/475656/google-color.svg"
+                                className="w-5 h-5"
+                                alt="Google"
+                            />
+                            Sign up with Google
+                        </button>
+
+                        <p className="text-center text-sm text-gray-500">
+                            Already have an account?{' '}
+                            <button
+                                type="button"
+                                onClick={() => navigate('/login')}
+                                className="font-bold text-green-600"
+                            >
+                                Log in
+                            </button>
+                        </p>
+                    </form>
                 </div>
             </div>
         </div>

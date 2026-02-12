@@ -141,7 +141,7 @@ const WidgetConfig = () => {
                             <button
                                 type="submit"
                                 disabled={saving}
-                                className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-blue-700 transition disabled:opacity-50"
+                                className="w-full bg-gray-900 text-white py-2 px-4 rounded-lg font-medium hover:bg-gray-800 transition disabled:opacity-50"
                             >
                                 {saving ? 'Saving...' : 'Save Configuration'}
                             </button>
