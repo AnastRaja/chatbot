@@ -113,7 +113,7 @@ const Dashboard = () => {
             {/* Header & Controls */}
             <div className="flex flex-col md:flex-row justify-between md:items-center gap-6">
                 <div>
-                    <h2 className="text-2xl font-bold text-gray-900 tracking-tight">Financial Overview</h2>
+                    <h2 className="text-2xl font-bold text-gray-900 tracking-tight">Dashboard</h2>
                     <p className="text-gray-500 text-sm mt-1">Track your key performance indicators in real-time.</p>
                 </div>
 
@@ -133,12 +133,12 @@ const Dashboard = () => {
                         </div>
                     </div>
 
-                    <button className="p-2.5 bg-white border border-gray-200 text-gray-600 rounded-xl hover:bg-gray-50 transition-colors">
+                    {/* <button className="p-2.5 bg-white border border-gray-200 text-gray-600 rounded-xl hover:bg-gray-50 transition-colors">
                         <Calendar className="w-5 h-5" />
                     </button>
                     <button className="p-2.5 bg-white border border-gray-200 text-gray-600 rounded-xl hover:bg-gray-50 transition-colors">
                         <Filter className="w-5 h-5" />
-                    </button>
+                    </button> */}
                 </div>
             </div>
 
@@ -156,7 +156,7 @@ const Dashboard = () => {
                             <div className="relative z-10">
                                 <div className="flex justify-between items-start mb-8">
                                     <div>
-                                        <p className="text-emerald-100 font-medium mb-1">Total Visitors</p>
+                                        <p className="text-emerald-100 font-medium mb-1">Unique Visitors</p>
                                         <h2 className="text-4xl font-bold tracking-tight">{analytics.uniqueVisitors}</h2>
                                     </div>
                                     <div className="p-3 bg-white/20 rounded-2xl backdrop-blur-sm">
@@ -179,22 +179,30 @@ const Dashboard = () => {
                                         </div>
                                         <p className="text-lg font-bold">{analytics.bounceRate}%</p>
                                     </div>
+
+                                </div>
+                                <div className="flex-1 bg-white/10 rounded-xl p-3 backdrop-blur-sm">
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-rose-300"></div>
+                                        <p className="text-xs text-emerald-100">Total Visits</p>
+                                    </div>
+                                    <p className="text-lg font-bold">{analytics.totalVisits}</p>
                                 </div>
 
-                                <div className="flex gap-3">
+                                {/* <div className="flex gap-3">
                                     <button className="flex-1 bg-white text-emerald-700 py-3 rounded-xl font-bold text-sm hover:bg-emerald-50 transition-colors shadow-sm">
                                         View Report
                                     </button>
                                     <button className="flex-1 bg-emerald-700/50 text-white py-3 rounded-xl font-bold text-sm hover:bg-emerald-700/70 transition-colors backdrop-blur-sm">
                                         Export
                                     </button>
-                                </div>
+                                </div> */}
                             </div>
                         </div>
 
                         {/* Secondary Stats */}
                         <div className="lg:col-span-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            <StatCard
+                            {/* <StatCard
                                 title="Total Sessions"
                                 value={analytics.totalVisits}
                                 trend="up"
@@ -214,7 +222,7 @@ const Dashboard = () => {
                                 trend="down"
                                 trendValue="-0.4%"
                                 icon={ArrowUpRight}
-                            />
+                            /> */}
 
                             {/* Analytics Chart */}
                             <div className="md:col-span-2 lg:col-span-3 bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
@@ -262,10 +270,10 @@ const Dashboard = () => {
                     <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
                         <div className="p-6 border-b border-gray-50 flex justify-between items-center">
                             <h3 className="font-bold text-gray-800">Top Visited Pages</h3>
-                            <button className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-900 font-medium">
+                            {/* <button className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-900 font-medium">
                                 <Download className="w-4 h-4" />
                                 Download CSV
-                            </button>
+                            </button> */}
                         </div>
                         <div className="overflow-x-auto">
                             <table className="w-full">

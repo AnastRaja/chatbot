@@ -171,7 +171,7 @@ const Chats = () => {
                                     {messages.map((msg, idx) => (
                                         <div key={idx} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
                                             <div className={`max-w-[80%] rounded-2xl px-5 py-3 text-sm shadow-sm ${msg.sender === 'user'
-                                                ? 'bg-blue-600 text-white rounded-br-none'
+                                                ? 'bg-gray-900 text-white rounded-br-none'
                                                 : 'bg-white border border-slate-200 text-slate-700 rounded-bl-none'
                                                 }`}>
                                                 <p className="whitespace-pre-wrap leading-relaxed">{msg.content}</p>

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
-import Logo from '../components/Logo';
+import WhiteLogo from '../components/WhiteLogo';
 
 const Register = () => {
     const navigate = useNavigate();
@@ -60,9 +60,9 @@ const Register = () => {
         <div className="min-h-screen flex bg-white font-sans">
             {/* Left Side */}
             <div className="hidden lg:flex w-1/2 bg-gradient-to-br from-green-600 to-green-900 p-12 flex-col justify-between relative overflow-hidden">
-                {/* <div className="relative z-10">
-                    <Logo className="h-10 w-auto text-white" />
-                </div> */}
+                <div className="relative z-10">
+                    <WhiteLogo className="h-8 w-auto text-white" />
+                </div>
 
                 <div className="absolute inset-0 opacity-10">
                     <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-white rounded-full blur-3xl" />
@@ -71,13 +71,13 @@ const Register = () => {
 
                 <div className="relative z-10 text-white max-w-lg">
                     <h1 className="text-5xl font-bold mb-6 leading-tight">
-                        Build faster with ContextBot
+                        Turn Conversations Into Qualified Leads
                     </h1>
                     <p className="text-green-100 text-lg mb-8">
-                        Create your account and start converting visitors into qualified leads.
+                        Log in to Leadvox and manage your AI sales agent that understands your website, answers real customer questions, and captures high-intent leads automatically.
                     </p>
 
-                    <div className="flex gap-4 items-center opacity-80">
+                    {/* <div className="flex gap-4 items-center opacity-80">
                         <div className="flex -space-x-4">
                             {[1, 2, 3, 4].map((i) => (
                                 <div
@@ -91,14 +91,10 @@ const Register = () => {
                         <span className="text-sm font-medium">
                             Trusted by teams everywhere
                         </span>
-                    </div>
+                    </div> */}
                 </div>
 
-                <div className="relative z-10 flex gap-6 text-green-200 text-sm font-medium">
-                    <span>© 2024 ContextBot</span>
-                    <span>Privacy Policy</span>
-                    <span>Terms of Service</span>
-                </div>
+
             </div>
 
             {/* Right Side */}

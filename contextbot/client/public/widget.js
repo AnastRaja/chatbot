@@ -16,7 +16,8 @@
         welcomeMessage: 'Hello! How can I help you today?'
     };
 
-    const host = 'http://localhost:3000'; // Replace with production URL if needed
+    const src = scriptTag.src;
+    const host = src.substring(0, src.indexOf('/widget.js'));
 
     // Initialize Widget
     async function init() {

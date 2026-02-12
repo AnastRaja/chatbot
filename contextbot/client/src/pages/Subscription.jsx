@@ -188,7 +188,7 @@ const Subscription = () => {
                             </div>
                         )}
 
-                        <div className="mb-8">
+                        <div className="mb-4">
                             <div className={`w-10 h-10 rounded-lg flex items-center justify-center mb-4 ${plan.highlight ? 'bg-slate-700/50' : 'bg-slate-100'}`}>
                                 {index === 0 && (
                                     <svg className="w-6 h-6 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
@@ -205,7 +205,7 @@ const Subscription = () => {
                             <p className={`text-sm ${plan.highlight ? 'text-slate-400' : 'text-slate-500'}`}>{plan.description}</p>
                         </div>
 
-                        <div className="mb-8">
+                        <div className="mb-4">
                             <div className="flex items-baseline gap-1">
                                 <span className={`text-4xl font-bold ${plan.highlight ? 'text-white' : 'text-slate-900'}`}>{plan.price}</span>
                                 {plan.originalPrice && (
@@ -218,7 +218,7 @@ const Subscription = () => {
                         <button
                             onClick={plan.action}
                             disabled={!plan.action || loading}
-                            className={`w-full py-3.5 px-4 rounded-xl font-semibold transition-all duration-200 mb-8 ${plan.highlight
+                            className={`w-full py-3.5 px-4 rounded-xl font-semibold transition-all duration-200 mb-4 ${plan.highlight
                                 ? 'bg-emerald-400 hover:bg-emerald-500 text-white shadow-lg shadow-orange-900/20'
                                 : 'bg-white border-2 border-slate-200 text-slate-700 hover:border-slate-800 hover:text-slate-900'
                                 } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}

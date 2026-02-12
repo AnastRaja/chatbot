@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
-import Logo from '../components/Logo';
+import WhiteLogo from '../components/WhiteLogo';
 import { CheckCircle2 } from 'lucide-react';
 
 const Login = () => {
@@ -61,9 +61,9 @@ const Login = () => {
         <div className="min-h-screen flex bg-white font-sans">
             {/* Left Side - Green Gradient */}
             <div className="hidden lg:flex w-1/2 bg-gradient-to-br from-green-600 to-green-900 p-12 flex-col justify-between relative overflow-hidden">
-                {/* <div className="relative z-10">
-                    <Logo className="h-10 w-auto text-white" />
-                </div> */}
+                <div className="relative z-10">
+                    <WhiteLogo className="h-8 w-auto text-white" />
+                </div>
 
                 {/* Abstract Background Shapes */}
                 <div className="absolute top-0 left-0 w-full h-full opacity-10">
@@ -72,15 +72,15 @@ const Login = () => {
                 </div>
 
                 <div className="relative z-10 text-white max-w-lg">
-                    <h1 className="text-5xl font-bold mb-6 leading-tight">
-                        Speed up your work with our Web App
+                    <h1 className="text-4xl font-bold mb-6 leading-tight">
+                        Turn Conversations Into Qualified Leads
                     </h1>
                     <p className="text-green-100 text-lg mb-8">
-                        Experience productivity like never before. Join thousands of users who have streamlined their workflow.
+                        Log in to Leadvox and manage your AI sales agent that understands your website, answers real customer questions, and captures high-intent leads automatically.
                     </p>
 
                     {/* Feature list equivalent to "Our partners" or just visual filler */}
-                    <div className="flex gap-4 items-center opacity-80">
+                    {/* <div className="flex gap-4 items-center opacity-80">
                         <div className="flex -space-x-4">
                             {[1, 2, 3, 4].map((i) => (
                                 <div key={i} className="w-10 h-10 rounded-full border-2 border-green-800 bg-green-700 flex items-center justify-center text-xs font-bold">
@@ -89,14 +89,14 @@ const Login = () => {
                             ))}
                         </div>
                         <span className="text-sm font-medium">Trusted by teams everywhere</span>
-                    </div>
+                    </div> */}
                 </div>
 
-                <div className="relative z-10 flex gap-6 text-green-200 text-sm font-medium">
+                {/* <div className="relative z-10 flex gap-6 text-green-200 text-sm font-medium">
                     <span>© 2024 ContextBot</span>
                     <span>Privacy Policy</span>
                     <span>Terms of Service</span>
-                </div>
+                </div> */}
             </div>
 
             {/* Right Side - Login Form */}
