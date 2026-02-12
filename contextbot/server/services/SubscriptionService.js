@@ -5,21 +5,21 @@ const PLANS = {
     free: {
         name: 'Free',
         maxProjects: 1,
-        maxStorage: 20 * 1024 * 1024, // 20 MB
-        maxAIResponses: 1000,
+        maxStorage: 10 * 1024 * 1024, // 10 MB
+        maxAIResponses: 500,
         models: ['gpt-4o-mini']
     },
     starter: {
         name: 'Starter',
         maxProjects: 5,
-        maxStorage: 200 * 1024 * 1024, // 200 MB
+        maxStorage: 100 * 1024 * 1024, // 100 MB
         maxAIResponses: 10000,
         models: ['gpt-4o-mini']
     },
     pro: {
         name: 'Pro',
         maxProjects: Infinity,
-        maxStorage: 1024 * 1024 * 1024, // 1 GB
+        maxStorage: 500 * 1024 * 1024, // 500 MB
         maxAIResponses: 50000,
         models: ['gpt-4o', 'gpt-4o-mini']
     }
@@ -67,6 +67,19 @@ class SubscriptionService {
         this.checkAndResetUsage(user);
 
         const plan = this.getPlan(user.subscription?.plan);
+
+        // Check for 15-day trial limit on Free plan
+        if (user.subscription?.plan === 'free') {
+            const createdAt = new Date(user.createdAt);
+            const now = new Date();
+            const diffTime = Math.abs(now - createdAt);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+            if (diffDays > 15) {
+                return false;
+            }
+        }
+
         if (user.usage?.aiResponses >= plan.maxAIResponses) {
             // throw new Error(`Monthly AI response limit reached for the ${plan.name} plan.`);
             // Return false instead of throwing to handle gracefully in chat
