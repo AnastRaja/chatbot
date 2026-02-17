@@ -71,7 +71,12 @@ const CreateProject = () => {
                     uploadFormData.append('file', selectedFile);
                     uploadFormData.append('projectId', newProjectId);
 
-                    const token = await user.getIdToken();
+                    let token;
+                    if (user.provider === 'firebase' || user.provider === 'google') {
+                        token = await user.getIdToken();
+                    } else {
+                        token = localStorage.getItem('authToken');
+                    }
                     await axios.post('/api/documents/upload', uploadFormData, {
                         headers: {
                             'Content-Type': 'multipart/form-data',

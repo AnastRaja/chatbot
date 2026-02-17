@@ -3,172 +3,96 @@ import axios from 'axios';
 import {
     onAuthStateChanged,
     signOut,
-    signInWithEmailAndPassword,
-    createUserWithEmailAndPassword,
     GoogleAuthProvider,
-    signInWithPopup,
-    updateProfile,
-    sendEmailVerification,
-    sendPasswordResetEmail,
-    verifyPasswordResetCode,
-    confirmPasswordReset
+    signInWithPopup
 } from 'firebase/auth';
 import { auth } from '../firebase';
-
-
 
 const AppContext = createContext();
 
 export const AppProvider = ({ children }) => {
     const [user, setUser] = useState(null);
+    const [loading, setLoading] = useState(true);
     const [profiles, setProfiles] = useState(null);
-    const [loading, setLoading] = useState(true); // Initial load
     const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-    // Track Firebase Auth State
-    useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-            if (firebaseUser) {
-                await syncUser(firebaseUser);
-            } else {
-                setUser(null);
-                setIsAuthenticated(false);
-                delete axios.defaults.headers.common['Authorization'];
-                setLoading(false);
-            }
-        });
-
-        // Setup Axios Interceptor to refresh token if needed (optional but good practice)
-        // For this scope, the above onAuthStateChanged handles the initial load.
-        // Firebase SKD handles token refresh automatically, but we need to ensure we get the fresh one.
-        // A simple interceptor to always get the current token before request:
-        const interceptorId = axios.interceptors.request.use(async (config) => {
-            const currentUser = auth.currentUser;
-            if (currentUser) {
-                const token = await currentUser.getIdToken();
-                config.headers.Authorization = `Bearer ${token}`;
-            }
-            return config;
-        });
-
-        return () => {
-            unsubscribe();
-            axios.interceptors.request.eject(interceptorId);
-        };
-    }, []);
-
-    const syncUser = async (firebaseUser = auth.currentUser) => {
-        if (!firebaseUser) return;
-
-        try {
-            const token = await firebaseUser.getIdToken();
-            // Set default header for all axios requests
-            axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-
-            // Sync user with backend
-            const res = await axios.post('/api/auth/sync');
-            const dbUser = res.data.user;
-
-            // Attach Firebase methods to the DB user object so existing calls work
-            if (dbUser) {
-                dbUser.getIdToken = async (forceRefresh) => firebaseUser.getIdToken(forceRefresh);
-                dbUser.reload = async () => firebaseUser.reload();
-                dbUser.emailVerified = firebaseUser.emailVerified; // Ensure this is present for redirects
-                dbUser.photoURL = firebaseUser.photoURL;
-                setUser(dbUser);
-            } else {
-                // Fallback but likely won't have subscription data
-                setUser(firebaseUser);
-            }
-
-            setIsAuthenticated(true);
-        } catch (error) {
-            console.error("Auth Sync Error", error);
-            // Fallback
-            setUser(firebaseUser);
-            setIsAuthenticated(true);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-
-
+    // Fetch user profiles (if needed for the app)
     const fetchProfiles = async () => {
         if (!user) return;
-        // Example of how to attach token if needed manually
-        // const token = await user.getIdToken();
         try {
-            const res = await axios.get('/api/profiles', {
-                // headers: { Authorization: `Bearer ${token}` } 
-            });
-            // Guard against HTML/String responses (404/500 redirects)
-            if (res.data && typeof res.data === 'object') {
-                setProfiles(res.data);
-            } else {
-                console.error('Invalid profiles data received:', res.data);
-                setProfiles({});
-            }
+            // Adjust this endpoint as needed for your app
+            // This assumes your backend has a route to get profiles for the current user
+            const res = await axios.get(`/api/profiles`);
+            setProfiles(res.data);
         } catch (error) {
-            console.error('Failed to fetch profiles', error);
+            console.error("Error fetching profiles:", error);
         }
     };
 
-    // Auto-fetch profiles when user is set
-    useEffect(() => {
-        if (user) {
-            fetchProfiles();
-        } else {
-            setProfiles(null);
-        }
-    }, [user]);
-
-    // --- Auth Wrappers ---
-
     const register = async (email, password, name) => {
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        await updateProfile(userCredential.user, { displayName: name });
-        await sendEmailVerification(userCredential.user, {
-            url: window.location.origin + '/login', // Redirect back to login after verify
-        });
-        return userCredential.user;
+        // Use custom backend registration
+        const res = await axios.post('/api/auth/register', { email, password, name });
+        return res.data;
     };
 
     const login = async (email, password) => {
-        const userCredential = await signInWithEmailAndPassword(auth, email, password);
-        if (!userCredential.user.emailVerified) {
-            // Optional: Sign out immediately if you want to enforce strict "no login until verified"
-            // signOut(auth);
-            // throw new Error("Please verify your email address.");
-            return userCredential.user; // Let component handle the warning
+        // Use custom backend login
+        const res = await axios.post('/api/auth/login', { email, password });
+        if (res.data.success) {
+            const { token, user } = res.data;
+            localStorage.setItem('authToken', token);
+            axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+            // Normalize user object to match Firebase structure
+            const normalizedUser = {
+                ...user,
+                emailVerified: user.isVerified // Map MongoDB field to Firebase-like field
+            };
+            setUser(normalizedUser);
+            setIsAuthenticated(true);
+            return normalizedUser;
         }
-        return userCredential.user;
     };
 
     const googleLogin = async () => {
-        const provider = new GoogleAuthProvider();
-        const result = await signInWithPopup(auth, provider);
-        // Google users are auto-verified
-        return result.user;
+        try {
+            const provider = new GoogleAuthProvider();
+            const result = await signInWithPopup(auth, provider);
+            // Sync with backend to create user in DB
+            const token = await result.user.getIdToken();
+            const res = await axios.post('/api/auth/google-sync', {}, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            // onAuthStateChanged will handle the state update
+            return result.user;
+        } catch (error) {
+            console.error("Google Login Error:", error);
+            throw error;
+        }
     };
 
     const logout = async () => {
-        await signOut(auth);
+        // Clear both custom and firebase
+        localStorage.removeItem('authToken');
+        delete axios.defaults.headers.common['Authorization'];
+        try {
+            await signOut(auth);
+        } catch (e) {
+            console.log("Firebase signout error (might not be logged in to firebase):", e);
+        }
         setUser(null);
         setIsAuthenticated(false);
         setProfiles(null);
     };
 
     const forgotPassword = async (email) => {
-        await sendPasswordResetEmail(auth, email, {
-            url: window.location.origin + '/reset-password', // Redirect to app reset page
-            handleCodeInApp: true
-        });
+        // Placeholder for future implementation
+        // await axios.post('/api/auth/forgot-password', { email });
+        console.log("Forgot password not implemented yet");
     };
 
     const resetPassword = async (oobCode, newPassword) => {
-        await verifyPasswordResetCode(auth, oobCode);
-        await confirmPasswordReset(auth, oobCode, newPassword);
+        // Placeholder for future implementation
+        console.log("Reset password not implemented yet");
     };
 
     // Auto-Logout Service
@@ -179,7 +103,6 @@ export const AppProvider = ({ children }) => {
             if (user) {
                 const now = Date.now();
                 const last = Number(localStorage.getItem('lastActivity') || 0);
-                // Throttle: only update if > 30 seconds have passed to save performance
                 if (now - last > 30 * 1000) {
                     localStorage.setItem('lastActivity', now.toString());
                 }
@@ -194,15 +117,12 @@ export const AppProvider = ({ children }) => {
             }
         };
 
-        // Check every minute
         const intervalId = setInterval(checkInactivity, 60 * 1000);
 
-        // Listeners for activity
         window.addEventListener('mousemove', updateActivity);
         window.addEventListener('keydown', updateActivity);
         window.addEventListener('click', updateActivity);
 
-        // Initialize lastActivity on mount/login
         if (user) {
             const current = localStorage.getItem('lastActivity');
             if (!current) {
@@ -216,7 +136,87 @@ export const AppProvider = ({ children }) => {
             window.removeEventListener('keydown', updateActivity);
             window.removeEventListener('click', updateActivity);
         };
-    }, [user]); // Re-run if user changes (login/logout)
+    }, [user]);
+
+    // Initial Load Logic
+    useEffect(() => {
+        const initAuth = async () => {
+            const customToken = localStorage.getItem('authToken');
+
+            // 1. Check for Custom Token (Email/Pass users)
+            if (customToken) {
+                axios.defaults.headers.common['Authorization'] = `Bearer ${customToken}`;
+                try {
+                    // Ideally, verify token with backend here or decode it
+                    // For now, we'll try to decode the payload to get user info optimistically
+                    const base64Url = customToken.split('.')[1];
+                    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                    const jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function (c) {
+                        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+                    }).join(''));
+
+                    const payload = JSON.parse(jsonPayload);
+
+                    // Check expiration
+                    if (Date.now() >= payload.exp * 1000) {
+                        throw new Error("Token expired");
+                    }
+
+                    setUser({
+                        uid: payload.uid,
+                        email: payload.email,
+                        provider: payload.provider,
+                        emailVerified: true // Implicit
+                    });
+                    setIsAuthenticated(true);
+                } catch (e) {
+                    console.error("Invalid or expired custom token", e);
+                    logout();
+                }
+            }
+
+            // 2. Listen for Firebase Auth changes (Google users)
+            const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+                if (firebaseUser) {
+                    // If we already have a custom user logged in, we might want to prioritize that
+                    // OR if this is a fresh load and we found a firebase user
+
+                    // Google users are verified by definition
+                    const token = await firebaseUser.getIdToken();
+                    axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+
+                    setUser({
+                        uid: firebaseUser.uid,
+                        email: firebaseUser.email,
+                        name: firebaseUser.displayName,
+                        provider: 'google', // or 'firebase'
+                        emailVerified: true
+                    });
+                    setIsAuthenticated(true);
+                } else {
+                    // If no firebase user AND we didn't find a valid custom token earlier
+                    if (!customToken) {
+                        setUser(null);
+                        setIsAuthenticated(false);
+                    }
+                }
+                setLoading(false);
+            });
+
+            return () => unsubscribe();
+        };
+
+        initAuth();
+    }, []);
+
+    // Fetch data when user is authenticated
+    useEffect(() => {
+        if (user) {
+            fetchProfiles();
+        } else {
+            setProfiles(null);
+        }
+    }, [user]);
 
     return (
         <AppContext.Provider value={{
@@ -232,8 +232,7 @@ export const AppProvider = ({ children }) => {
             googleLogin,
             logout,
             forgotPassword,
-            resetPassword,
-            syncUser
+            resetPassword
         }}>
             {!loading && children}
         </AppContext.Provider>

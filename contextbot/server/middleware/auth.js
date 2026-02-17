@@ -1,4 +1,6 @@
 const admin = require("../firebaseAdmin");
+const jwt = require("jsonwebtoken");
+const User = require("../models/User");
 
 module.exports = async (req, res, next) => {
     const header = req.headers.authorization;
@@ -9,18 +11,25 @@ module.exports = async (req, res, next) => {
     const token = header.split("Bearer ")[1];
 
     try {
-        // Basic caching could be added here as per plan, keeping it simple first to ensure functionality
-        const decoded = await admin.auth().verifyIdToken(token);
+        // Strategy 1: Check if it's our custom JWT (for email/password users)
+        let decoded;
+        try {
+            decoded = jwt.verify(token, process.env.JWT_SECRET);
+            // If verify succeeds, it's our token
+            req.user = decoded; // { uid, email, role? }
+            return next();
+        } catch (jwtError) {
+            // Not a valid custom JWT, proceed to check Firebase
+        }
 
-        // if (!decoded.email_verified) {
-        //     console.warn(`[Auth] User ${decoded.email} email not verified, but allowing for debug/dev.`);
-        //     // return res.status(403).json({ error: "Email not verified" });
-        // }
+        // Strategy 2: Check if it's a Firebase ID Token (for Google users)
+        decoded = await admin.auth().verifyIdToken(token);
 
         req.user = {
             uid: decoded.uid,
             email: decoded.email,
             name: decoded.name || decoded.email.split("@")[0],
+            provider: 'firebase'
         };
 
         next();

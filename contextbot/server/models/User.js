@@ -5,6 +5,11 @@ const UserSchema = new mongoose.Schema({
     email: { type: String, required: true },
     name: { type: String },
     provider: { type: String }, // password | google
+    password: { type: String, select: false }, // Hashed password, excluded by default
+    isVerified: { type: Boolean, default: false },
+    verificationToken: { type: String },
+    resetPasswordToken: { type: String },
+    resetPasswordExpires: { type: Date },
     subscription: {
         plan: { type: String, enum: ['free', 'starter', 'pro'], default: 'free' },
         status: { type: String, enum: ['active', 'past_due', 'canceled', 'cancelled', 'incomplete', 'on_hold', 'pending', 'failed', 'expired'], default: 'active' },
