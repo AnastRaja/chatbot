@@ -171,10 +171,93 @@ router.post('/google-sync', authMiddleware, async (req, res) => {
     }
 });
 
-// Helper for forgot password (placeholder for now)
+const resetPasswordTemplate = require('../Email_Template/ResetPassword');
+
+// POST /api/auth/forgot-password
+// Request password reset
 router.post('/forgot-password', async (req, res) => {
-    // TODO: Implement generate token + send email
-    res.status(501).json({ error: "Not implemented yet" });
+    try {
+        const { email } = req.body;
+        if (!email) return res.status(400).json({ error: 'Email is required' });
+
+        const user = await User.findOne({ email });
+        if (!user) {
+            // Security: Don't reveal if user exists
+            return res.json({ success: true, message: 'If an account exists, a reset email has been sent.' });
+        }
+
+        if (user.provider === 'firebase' || user.provider === 'google') {
+            return res.status(400).json({ error: 'Please sign in with Google.' });
+        }
+
+        // Generate token
+        const resetToken = crypto.randomBytes(32).toString('hex');
+        user.resetPasswordToken = resetToken;
+        user.resetPasswordExpires = Date.now() + 3600000; // 1 hour
+
+        await user.save();
+
+        // Send Email
+        const resetLink = `${process.env.CLIENT_URL || 'http://localhost:5173'}/reset-password?token=${resetToken}`;
+        console.log(`Sending reset email to ${email} with link: ${resetLink}`);
+
+        try {
+            await emailService.sendEmail({
+                to: email,
+                subject: 'Reset your Leadvox password',
+                html: resetPasswordTemplate(resetLink)
+            });
+        } catch (emailError) {
+            console.error('Failed to send reset email:', emailError);
+            user.resetPasswordToken = undefined;
+            user.resetPasswordExpires = undefined;
+            await user.save();
+            return res.status(500).json({ error: 'Failed to send email. Please try again later.' });
+        }
+
+        res.json({ success: true, message: 'If an account exists, a reset email has been sent.' });
+    } catch (error) {
+        console.error('Forgot Password Error:', error);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// POST /api/auth/reset-password
+// Set new password with token
+router.post('/reset-password', async (req, res) => {
+    try {
+        const { token, newPassword } = req.body;
+
+        if (!token || !newPassword) {
+            return res.status(400).json({ error: 'Token and new password are required' });
+        }
+
+        const user = await User.findOne({
+            resetPasswordToken: token,
+            resetPasswordExpires: { $gt: Date.now() }
+        });
+
+        if (!user) {
+            return res.status(400).json({ error: 'Password reset token is invalid or has expired.' });
+        }
+
+        // Hash new password
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+        user.password = hashedPassword;
+        user.resetPasswordToken = undefined;
+        user.resetPasswordExpires = undefined;
+
+        // Update provider if it was somehow different logic, 
+        // but likely it's 'password' already.
+
+        await user.save();
+
+        res.json({ success: true, message: 'Password has been reset successfully.' });
+    } catch (error) {
+        console.error('Reset Password Error:', error);
+        res.status(500).json({ error: 'Server error' });
+    }
 });
 
 

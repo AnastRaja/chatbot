@@ -85,14 +85,21 @@ export const AppProvider = ({ children }) => {
     };
 
     const forgotPassword = async (email) => {
-        // Placeholder for future implementation
-        // await axios.post('/api/auth/forgot-password', { email });
-        console.log("Forgot password not implemented yet");
+        try {
+            const res = await axios.post('/api/auth/forgot-password', { email });
+            return res.data;
+        } catch (error) {
+            throw error.response?.data?.error || 'Failed to send reset email';
+        }
     };
 
-    const resetPassword = async (oobCode, newPassword) => {
-        // Placeholder for future implementation
-        console.log("Reset password not implemented yet");
+    const resetPassword = async (token, newPassword) => {
+        try {
+            const res = await axios.post('/api/auth/reset-password', { token, newPassword });
+            return res.data;
+        } catch (error) {
+            throw error.response?.data?.error || 'Failed to reset password';
+        }
     };
 
     // Auto-Logout Service

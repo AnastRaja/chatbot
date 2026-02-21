@@ -23,15 +23,17 @@ transporter.verify(function (error, success) {
 
 const sendEmail = async ({ to, subject, html }) => {
     try {
+        // Generate plain text version by removing HTML tags
+        const text = html.replace(/<[^>]*>?/gm, ' ').replace(/\s+/g, ' ').trim();
+
         const info = await transporter.sendMail({
-            from: `"${process.env.SMTP_FROM_NAME || 'Leadvox'}" <${process.env.SMTP_FROM || process.env.SMTP_USER}>`, // sender address
-            to, // list of receivers
-            subject, // Subject line
-            html, // html body
+            from: `"${process.env.SMTP_FROM_NAME || 'Leadvox'}" <${process.env.SMTP_FROM || process.env.SMTP_USER}>`,
+            to,
+            subject,
+            text, // Plain text version
+            html, // HTML version
         });
         console.log('Message sent: %s', info.messageId);
-        console.log('Preview URL: %s', nodemailer.getTestMessageUrl(info));
-        console.log('SMTP Response:', info.response);
         return { success: true, messageId: info.messageId, response: info.response };
     } catch (error) {
         console.error('Error sending email:', error);
