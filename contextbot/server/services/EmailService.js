@@ -1,50 +1,37 @@
-const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 require('dotenv').config();
 
-// Create transporter using environment variables
-const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port: process.env.SMTP_PORT,
-    secure: process.env.SMTP_SECURE === 'true', // true for 465, false for other ports
-    auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-    },
-});
-
-// Verify connection configuration
-transporter.verify(function (error, success) {
-    if (error) {
-        console.error('SMTP Connection Error:', error);
-    } else {
-        console.log('SMTP Server is ready to take our messages');
-    }
-});
+// Initialize Resend with the API key from environment variables
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 const sendEmail = async ({ to, subject, html }) => {
     try {
+        console.log(`Sending email using Resend API to: ${to}`);
+
         // Generate plain text version by removing HTML tags
         const text = html.replace(/<[^>]*>?/gm, ' ').replace(/\s+/g, ' ').trim();
 
-        // Wrap sendMail in a promise with a 15-second timeout to prevent Render 502s
-        const sendMailPromise = transporter.sendMail({
-            from: `"${process.env.SMTP_FROM_NAME || 'Leadvox'}" <${process.env.SMTP_FROM || process.env.SMTP_USER}>`,
+        // Note: Unless 'leadvox.in' or the FROM domain is verified in Resend dashboard, 
+        // you MUST use 'onboarding@resend.dev' as the from address during testing, 
+        // and you can only send to your own registered email address.
+        const fromAddress = process.env.SMTP_FROM || 'onboarding@resend.dev';
+        const fromName = process.env.SMTP_FROM_NAME || 'Leadvox';
+
+        const data = await resend.emails.send({
+            from: `${fromName} <${fromAddress}>`,
             to,
             subject,
             text, // Plain text version
             html, // HTML version
         });
 
-        const timeoutPromise = new Promise((_, reject) => {
-            setTimeout(() => {
-                reject(new Error('SMTP Connection Timeout: The email server took too long to respond.'));
-            }, 15000); // 15 seconds
-        });
+        if (data.error) {
+            console.error('Resend API Error:', data.error);
+            throw new Error(`Resend Error: ${data.error.message}`);
+        }
 
-        const info = await Promise.race([sendMailPromise, timeoutPromise]);
-
-        console.log('Message sent: %s', info.messageId);
-        return { success: true, messageId: info.messageId, response: info.response };
+        console.log('Message sent via Resend: %s', data.data.id);
+        return { success: true, messageId: data.data.id, response: data };
     } catch (error) {
         console.error('Error sending email:', error);
         throw error;
