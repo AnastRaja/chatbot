@@ -26,13 +26,23 @@ const sendEmail = async ({ to, subject, html }) => {
         // Generate plain text version by removing HTML tags
         const text = html.replace(/<[^>]*>?/gm, ' ').replace(/\s+/g, ' ').trim();
 
-        const info = await transporter.sendMail({
+        // Wrap sendMail in a promise with a 15-second timeout to prevent Render 502s
+        const sendMailPromise = transporter.sendMail({
             from: `"${process.env.SMTP_FROM_NAME || 'Leadvox'}" <${process.env.SMTP_FROM || process.env.SMTP_USER}>`,
             to,
             subject,
             text, // Plain text version
             html, // HTML version
         });
+
+        const timeoutPromise = new Promise((_, reject) => {
+            setTimeout(() => {
+                reject(new Error('SMTP Connection Timeout: The email server took too long to respond.'));
+            }, 15000); // 15 seconds
+        });
+
+        const info = await Promise.race([sendMailPromise, timeoutPromise]);
+
         console.log('Message sent: %s', info.messageId);
         return { success: true, messageId: info.messageId, response: info.response };
     } catch (error) {
