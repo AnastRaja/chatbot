@@ -50,10 +50,11 @@ router.post('/register', async (req, res) => {
         await user.save();
 
         // Send verification email
-        // We'll point this to the frontend verification page
-        const verificationLink = `${process.env.CLIENT_URL || 'http://localhost:5173'}/verify-email?token=${verificationToken}`;
+        // Dynamically grab the frontend URL that made the request, or fallback to env/localhost
+        const clientUrl = req.headers.origin || process.env.CLIENT_URL || 'http://localhost:5173';
+        const verificationLink = `${clientUrl}/verify-email?token=${verificationToken}`;
 
-        console.log(`Attempting to send verification email to: ${email}`);
+        console.log(`Attempting to send verification email to: ${email} via ${clientUrl}`);
 
         try {
             const emailResult = await emailService.sendEmail({
@@ -198,7 +199,10 @@ router.post('/forgot-password', async (req, res) => {
         await user.save();
 
         // Send Email
-        const resetLink = `${process.env.CLIENT_URL || 'http://localhost:5173'}/reset-password?token=${resetToken}`;
+        // Dynamically grab the frontend URL that made the request, or fallback to env/localhost
+        const clientUrl = req.headers.origin || process.env.CLIENT_URL || 'http://localhost:5173';
+        const resetLink = `${clientUrl}/reset-password?token=${resetToken}`;
+
         console.log(`Sending reset email to ${email} with link: ${resetLink}`);
 
         try {
