@@ -28,20 +28,47 @@ const allowedOrigins = [
     'http://localhost:3000'
 ];
 
-app.use(cors({
-    origin: function (origin, callback) {
-        // allow requests with no origin (like mobile apps or curl requests)
-        if (!origin) return callback(null, true);
-        if (allowedOrigins.indexOf(origin) === -1) {
-            var msg = 'The CORS policy for this site does not allow access from the specified Origin.';
-            return callback(new Error(msg), false);
+// Dynamic CORS Configuration
+const corsOptionsDelegate = function (req, callback) {
+    let corsOptions;
+
+    // Public paths that the widget accesses from any domain
+    const publicPaths = [
+        '/api/chat',
+        '/api/analytics/track',
+        '/api/widget/config'
+    ];
+
+    const isPublicPath = publicPaths.some(path => req.path.startsWith(path));
+
+    if (isPublicPath) {
+        // Allow any origin for public widget APIs
+        corsOptions = {
+            origin: true,
+            credentials: true,
+            methods: ['GET', 'POST', 'OPTIONS'],
+            allowedHeaders: ['Content-Type', 'Authorization']
+        };
+    } else {
+        // Strict origin check for dashboard operations
+        const origin = req.header('Origin');
+        if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+            corsOptions = {
+                origin: true,
+                credentials: true,
+                methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+                allowedHeaders: ['Content-Type', 'Authorization']
+            };
+        } else {
+            // Block origin gracefully (returning false blocks it without throwing an unhandled 500 Error like we saw before)
+            corsOptions = { origin: false };
         }
-        return callback(null, true);
-    },
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
-}));
+    }
+
+    callback(null, corsOptions);
+};
+
+app.use(cors(corsOptionsDelegate));
 app.use(bodyParser.json({
     verify: (req, res, buf) => {
         req.rawBody = buf;
