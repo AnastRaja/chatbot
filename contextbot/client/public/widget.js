@@ -1,7 +1,8 @@
 (function () {
     // 1. Get configuration locally first
     const scriptTag = document.currentScript;
-    const bizId = scriptTag.getAttribute('data-id');
+    let bizId = scriptTag.getAttribute('data-id');
+    if (bizId) bizId = bizId.trim();
 
     if (!bizId) {
         console.error('ContextBot: Missing data-id attribute.');
@@ -13,7 +14,8 @@
         primaryColor: scriptTag.getAttribute('data-color') || '#2563eb',
         autoOpenDelay: 0,
         agentName: 'Support',
-        welcomeMessage: 'Hello! How can I help you today?'
+        welcomeMessage: 'Hello! How can I help you today?',
+        quickQuestions: []
     };
 
     const src = scriptTag.src;
@@ -35,6 +37,8 @@
                 config.autoOpenDelay = data.autoOpenDelay ?? 0;
                 config.agentName = data.agentName || config.agentName;
                 config.welcomeMessage = data.welcomeMessage || config.welcomeMessage;
+                config.quickQuestions = data.quickQuestions || [];
+                config.agentAvatar = data.agentAvatar || '';
             }
         } catch (e) {
             console.error('ContextBot: Failed to load config, using defaults.');
@@ -70,11 +74,12 @@
         const iframeContainer = document.createElement('div');
         Object.assign(iframeContainer.style, {
             position: 'fixed',
-            bottom: '100px',
+            bottom: '90px',
             right: '20px',
             width: '380px',
             height: '600px',
-            maxHeight: '80vh',
+            maxWidth: 'calc(100vw - 40px)',
+            maxHeight: 'calc(100vh - 110px)',
             backgroundColor: 'white',
             borderRadius: '16px',
             boxShadow: '0 12px 40px rgba(0,0,0,0.12)',
@@ -93,6 +98,7 @@
         // Pass params to iframe
         const params = new URLSearchParams({
             bizId: bizId,
+            host: host,
             color: config.primaryColor,
             agentName: config.agentName,
             welcome: config.welcomeMessage
@@ -114,7 +120,9 @@
                 type: 'PAGE_CONTEXT',
                 url: window.location.href,
                 title: document.title,
-                content: document.body.innerText.substring(0, 5000) // Limit content size
+                content: document.body.innerText.substring(0, 5000), // Limit content size
+                quickQuestions: config.quickQuestions,
+                agentAvatar: config.agentAvatar
             };
             // Send to iframe
             iframe.contentWindow.postMessage(contextData, '*');
@@ -153,8 +161,14 @@
                 bubble.style.transform = 'rotate(0deg)';
             }
         }
-
         bubble.addEventListener('click', () => toggleWidget());
+
+        // Listen for close events from iframe
+        window.addEventListener('message', (event) => {
+            if (event.data && event.data.type === 'CLOSE_WIDGET') {
+                toggleWidget(false);
+            }
+        });
 
         // 5. Auto-Open Logic
         // Check if user has seen widget before (Session Storage is better for testing/user experience per session)

@@ -41,8 +41,10 @@ router.get('/widget/config/:bizId', async (req, res) => {
             name: project.name,
             widgetColor: project.widgetColor,
             agentName: project.settings?.agentName || 'Support Agent',
+            agentAvatar: project.settings?.agentAvatar || '',
             welcomeMessage: project.settings?.welcomeMessage || 'Hello! How can I help you today?',
             autoOpenDelay: project.settings?.autoOpenDelay ?? 5000,
+            quickQuestions: project.quickQuestions || [],
             status: 'online'
         });
     } catch (error) {
@@ -274,10 +276,12 @@ router.delete('/chats/:id', auth, async (req, res) => {
 // POST /api/analytics/track
 router.post('/analytics/track', async (req, res) => {
     try {
-        const { projectId, visitorId, sessionId, url, pageTitle, eventType } = req.body;
+        let { projectId, visitorId, sessionId, url, pageTitle, eventType } = req.body;
         const Visit = require('../models/Visit');
 
         if (!projectId) return res.status(400).json({ error: 'Project ID required' });
+
+        projectId = projectId.trim();
 
         if (eventType === 'view') {
             // New Page View

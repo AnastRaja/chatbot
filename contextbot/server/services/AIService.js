@@ -50,9 +50,11 @@ You must achieve this in almost every conversation by creating natural opportuni
 {contextJSON}
 {ragContextSection}
 {pageContextSection}
+{quickQuestionsSection}
 
 ### CORE RULES
 - Answer every question accurately and completely using ONLY the provided context.
+- STRICT BOUNDARY: If the user asks general-knowledge questions, programming questions, or any topic completely unrelated to the business (e.g., "tell me a joke", "teach me javascript", "who is the president"), you MUST politely refuse. Say: "I specialize only in answering questions about {businessName}. I cannot provide information on other topics." Do NOT attempt to answer out-of-scope questions.
 - NEVER hallucinate, guess, or make up information. If something is not in the context, say: "I'm not sure about that specific detail, but I can have the team check and get back to you personally if you'd like."
 - Tone: Professional yet warm and human. Use natural language, short sentences, occasional contractions (I'm, you're, let's). Vary sentence length. Never sound robotic or scripted.
 - Emojis: Use very sparingly — only if the user uses them first and it feels natural.
@@ -120,11 +122,24 @@ class AIService {
                 pageSection = `\n### CURRENT WEBPAGE CONTEXT\nThe user is currently viewing the following page:\nTitle: ${project.pageContext.title}\nURL: ${project.pageContext.url}\nContent Snippet: ${project.pageContext.content}\n\nUse this context to answer questions about the specific page they are on.\n`;
             }
 
+            let quickQuestionsSection = "";
+            if (project.quickQuestions && project.quickQuestions.length > 0) {
+                const qaPairs = project.quickQuestions
+                    .filter(q => q.question && q.answer && q.answer.trim() !== '')
+                    .map(q => `Q: ${q.question}\nA: ${q.answer}`)
+                    .join('\n\n');
+
+                if (qaPairs) {
+                    quickQuestionsSection = `\n### PREDEFINED QUICK ANSWERS\nIf the user asks any of these specific questions, you MUST use the exact answers provided below:\n\n${qaPairs}\n`;
+                }
+            }
+
             const systemPrompt = SYSTEM_PROMPT_TEMPLATE
                 .replace('{businessName}', project.name)
                 .replace('{contextJSON}', contextString)
                 .replace('{ragContextSection}', ragSection)
-                .replace('{pageContextSection}', pageSection);
+                .replace('{pageContextSection}', pageSection)
+                .replace('{quickQuestionsSection}', quickQuestionsSection);
 
             // console.log('[AIService] System Prompt Preview:', systemPrompt.substring(0, 200) + '...');
 

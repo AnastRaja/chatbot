@@ -7,8 +7,10 @@
     <title>Chat</title>
     <!-- Use Tailwind CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Marked.js for Markdown parsing -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <!-- Modern Font: Inter -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         /* Custom scrollbar */
         ::-webkit-scrollbar {
@@ -49,16 +51,83 @@
                 transform: translateY(0);
             }
         }
+
+        /* Markdown Styles for bot responses */
+        .markdown-body {
+            /* Inherit font sizes and line heights from parent */
+            color: inherit;
+        }
+
+        .markdown-body p {
+            margin-bottom: 0.75em;
+        }
+
+        .markdown-body p:last-child {
+            margin-bottom: 0;
+        }
+
+        .markdown-body strong {
+            font-weight: 600;
+            color: #111827;
+            /* Darker tone for emphasis */
+        }
+
+        .markdown-body ul,
+        .markdown-body ol {
+            margin-top: 0.5em;
+            margin-bottom: 0.75em;
+            padding-left: 1.5em;
+        }
+
+        .markdown-body ul {
+            list-style-type: disc;
+        }
+
+        .markdown-body ol {
+            list-style-type: decimal;
+        }
+
+        .markdown-body li {
+            margin-bottom: 0.25em;
+        }
+
+        .markdown-body a {
+            color: #2563eb;
+            text-decoration: underline;
+        }
+
+        .markdown-body a:hover {
+            text-decoration: none;
+        }
     </style>
 </head>
 
 <body class="bg-white flex flex-col h-screen overflow-hidden">
 
     <!-- Header -->
-    <div id="header" class="p-5 bg-blue-600 text-white shadow-lg z-10 flex border-b border-white/10">
-        <div class="flex flex-col">
-            <h1 class="font-semibold text-xl tracking-tight">Support Chat</h1>
-            <p class="text-sm text-white/80 mt-0.5">We typically reply in a few minutes</p>
+    <div id="header"
+        class="p-4 sm:p-5 bg-blue-600 text-white shadow-lg z-10 flex items-center justify-between border-b border-white/10 shrink-0">
+        <div class="flex items-center gap-3">
+            <div id="header-avatar-container" class="hidden">
+                <img id="header-avatar" src="" alt="Agent Avatar"
+                    class="w-10 h-10 rounded-full object-cover border-2 border-white/20 shadow-sm" />
+            </div>
+            <div class="flex flex-col">
+                <h1 class="font-semibold text-lg sm:text-xl tracking-tight leading-tight">Support Chat</h1>
+                <p class="text-[13px] text-white/90 mt-0.5 leading-tight flex items-center gap-1.5"><span
+                        class="inline-block w-2 h-2 bg-emerald-400 rounded-full"></span> Online</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-1">
+            <button type="button" onclick="window.parent.postMessage({ type: 'CLOSE_WIDGET' }, '*')"
+                class="p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors active:scale-95 group">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                    stroke-linecap="round" stroke-linejoin="round"
+                    class="group-hover:rotate-90 transition-transform duration-200">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
         </div>
     </div>
 
@@ -71,6 +140,10 @@
                 Hello! 👋 We're here to help. Ask us anything about our services.
             </div>
         </div>
+    </div>
+
+    <!-- Quick Questions Container -->
+    <div id="quick-questions" class="px-5 pb-3 bg-gray-50 flex-wrap gap-2 hidden">
     </div>
 
     <!-- Input Area -->
@@ -88,6 +161,12 @@
                 </svg>
             </button>
         </form>
+        <div class="text-center mt-3 mb-1">
+            <a href="https://leadvox.in" target="_blank" rel="noopener noreferrer"
+                class="text-[11px] text-gray-400 hover:text-gray-600 transition-colors inline-flex items-center gap-1 font-medium">
+                ⚡ Powered by leadvox.in
+            </a>
+        </div>
     </div>
 
     <script>
@@ -104,9 +183,7 @@
 
         // Dynamic Content
         const headerTitle = document.querySelector('#header h1');
-        const headerSub = document.querySelector('#header p');
         headerTitle.textContent = agentName;
-        headerSub.innerHTML = '<span class="inline-block w-2 h-2 bg-green-400 rounded-full mr-1"></span> Online';
 
         const initialMsg = document.querySelector('#chat-messages div > div');
         if (initialMsg) initialMsg.textContent = welcomeMsg;
@@ -124,6 +201,34 @@
             if (event.data && event.data.type === 'PAGE_CONTEXT') {
                 pageContext = event.data;
                 console.log('ContextBot: Received page context', pageContext.title);
+
+                // Check for avatar
+                if (pageContext.agentAvatar && pageContext.agentAvatar.trim() !== '') {
+                    document.getElementById('header-avatar-container').classList.remove('hidden');
+                    document.getElementById('header-avatar').src = pageContext.agentAvatar;
+                }
+
+                // Render Quick Questions
+                if (event.data.quickQuestions && event.data.quickQuestions.length > 0 && !window.qsRendered) {
+                    window.qsRendered = true;
+                    const qqContainer = document.getElementById('quick-questions');
+                    qqContainer.classList.remove('hidden');
+                    qqContainer.classList.add('flex');
+
+                    event.data.quickQuestions.forEach(q => {
+                        const pill = document.createElement('button');
+                        pill.className = "text-left px-4 py-2 bg-white border border-gray-200 rounded-2xl text-[13px] font-medium transition-colors shadow-sm cursor-pointer hover:bg-gray-100";
+                        pill.style.color = color;
+                        pill.style.borderColor = color;
+                        pill.textContent = q.question;
+                        pill.onclick = () => {
+                            input.value = q.question;
+                            form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+                            qqContainer.style.display = 'none'; // Hide after use
+                        };
+                        qqContainer.appendChild(pill);
+                    });
+                }
             }
         });
 
@@ -136,9 +241,16 @@
             const botClasses = 'bg-white border text-gray-800 rounded-2xl rounded-tl-none shadow-sm';
 
             bubble.className = `p-4 max-w-[85%] text-[15px] leading-relaxed ${sender === 'user' ? userClasses : botClasses}`;
-            if (sender === 'user') bubble.style.backgroundColor = color;
+            if (sender === 'user') {
+                bubble.style.backgroundColor = color;
+                // Safely insert user text to prevent XSS
+                bubble.textContent = text;
+            } else {
+                // Parse AI markdown and inject
+                bubble.classList.add('markdown-body');
+                bubble.innerHTML = marked.parse(text);
+            }
 
-            bubble.textContent = text;
             div.appendChild(bubble);
             chatContainer.appendChild(div);
             // Smooth scroll

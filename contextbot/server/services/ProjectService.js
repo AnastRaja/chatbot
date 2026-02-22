@@ -46,7 +46,7 @@ class ProjectService {
 
     async createOrUpdateProject(data, userId, userEmail) {
         console.log(`[ProjectService] Create/Update for user: ${userId} (${userEmail})`, data);
-        const { id, name, context, widgetColor, settings } = data;
+        const { id, name, context, widgetColor, settings, quickQuestions } = data;
         let bizId = id;
         let project;
 
@@ -71,6 +71,10 @@ class ProjectService {
             project.context = context || project.context;
             project.widgetColor = widgetColor || project.widgetColor;
 
+            if (quickQuestions !== undefined) {
+                project.quickQuestions = quickQuestions;
+            }
+
             // Ensure email is saved if missing
             if (!project.userEmail && userEmail) {
                 project.userEmail = userEmail;
@@ -91,7 +95,8 @@ class ProjectService {
                 name: name || 'Untitled Business',
                 context: context || {},
                 widgetColor: widgetColor || '#2563eb',
-                settings: settings || {}
+                settings: settings || {},
+                quickQuestions: quickQuestions || []
             });
             console.log(`[ProjectService] Created project ${bizId} with userId ${project.userId}`);
         }

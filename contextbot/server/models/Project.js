@@ -12,8 +12,16 @@ const ProjectSchema = new mongoose.Schema({
         tone: { type: String, default: 'helpful' },
         leadGenEnabled: { type: Boolean, default: true },
         agentName: { type: String, default: 'Support Agent' },
+        agentAvatar: { type: String, default: '' },
         welcomeMessage: { type: String, default: 'Hello! How can I help you today?' },
         autoOpenDelay: { type: Number, default: 5000 } // 0 to disable
+    },
+    quickQuestions: {
+        type: [{
+            question: { type: String, required: true },
+            answer: { type: String, default: '' }
+        }],
+        default: []
     },
     createdAt: { type: Date, default: Date.now }
 });

@@ -4,10 +4,11 @@ const User = require('../models/User');
 const DodoPayments = require('dodopayments');
 
 // Initialize Dodo Client
+const isLiveMode = process.env.DODO_ENVIRONMENT === 'live_mode';
 const client = new DodoPayments({
-    bearerToken: process.env.DODO_PAYMENTS_API_KEY,
-    webhookKey: process.env.DODO_PAYMENTS_WEBHOOK_SECRET, // Updated to match .env
-    environment: 'test_mode' // Explicitly set to test mode
+    bearerToken: isLiveMode ? process.env.DODO_PAYMENTS_LIVE_API_KEY : process.env.DODO_PAYMENTS_API_KEY,
+    webhookKey: process.env.DODO_PAYMENTS_WEBHOOK_SECRET, // using test webhook secret since webhook is untouched per user
+    environment: isLiveMode ? 'live_mode' : 'test_mode'
 });
 
 // Helper to create checkout session
@@ -102,8 +103,11 @@ async function handleSubscriptionUpdate(subscription, forceDowngrade = false) {
     // Map product_id to plan name
     let plan = 'free';
     if (isActive) {
-        if (subscription.product_id === 'pdt_0NXkYjtOdaPqAJ2dtluNG') plan = 'starter';
-        if (subscription.product_id === 'pdt_0NXkYqWNBTn5p9rtp5oGY') plan = 'pro';
+        const starterIds = [process.env.DODO_PRODUCT_ID_STARTER, process.env.DODO_LIVE_PRODUCT_ID_STARTER];
+        const proIds = [process.env.DODO_PRODUCT_ID_PRO, process.env.DODO_LIVE_PRODUCT_ID_PRO];
+
+        if (starterIds.includes(subscription.product_id)) plan = 'starter';
+        if (proIds.includes(subscription.product_id)) plan = 'pro';
     }
 
     let user;
@@ -139,8 +143,11 @@ router.post('/verify-subscription', async (req, res) => {
 
         let plan = 'free';
         if (isActive) {
-            if (subscription.product_id === 'pdt_0NXkYjtOdaPqAJ2dtluNG') plan = 'starter';
-            if (subscription.product_id === 'pdt_0NXkYqWNBTn5p9rtp5oGY') plan = 'pro';
+            const starterIds = [process.env.DODO_PRODUCT_ID_STARTER, process.env.DODO_LIVE_PRODUCT_ID_STARTER];
+            const proIds = [process.env.DODO_PRODUCT_ID_PRO, process.env.DODO_LIVE_PRODUCT_ID_PRO];
+
+            if (starterIds.includes(subscription.product_id)) plan = 'starter';
+            if (proIds.includes(subscription.product_id)) plan = 'pro';
         }
 
         return res.json({ success: true, status: subscription.status, plan });

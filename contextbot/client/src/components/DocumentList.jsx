@@ -29,7 +29,7 @@ const DocumentList = ({ projectId }) => {
 
     const fetchDocuments = async () => {
         try {
-            const token = await user.getIdToken();
+            const token = localStorage.getItem('authToken');
             const res = await axios.get(`/api/documents/${projectId}`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -51,7 +51,7 @@ const DocumentList = ({ projectId }) => {
         formData.append('projectId', projectId);
 
         try {
-            const token = await user.getIdToken();
+            const token = localStorage.getItem('authToken');
             await axios.post('/api/documents/upload', formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data',
@@ -75,7 +75,7 @@ const DocumentList = ({ projectId }) => {
     const handleDelete = async (docId) => {
         if (!window.confirm('Are you sure you want to delete this document?')) return;
         try {
-            const token = await user.getIdToken();
+            const token = localStorage.getItem('authToken');
             await axios.delete(`/api/documents/${docId}`, {
                 headers: { Authorization: `Bearer ${token}` }
             });

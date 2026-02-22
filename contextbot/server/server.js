@@ -25,7 +25,8 @@ const allowedOrigins = [
     'https://app.leadvox.in',
     'https://www.leadvox.in',
     'http://localhost:5173',
-    'http://localhost:3000'
+    'http://localhost:3000',
+    'null' // Allow file:// testing
 ];
 
 // Dynamic CORS Configuration
@@ -42,25 +43,26 @@ const corsOptionsDelegate = function (req, callback) {
     const isPublicPath = publicPaths.some(path => req.path.startsWith(path));
 
     if (isPublicPath) {
-        // Allow any origin for public widget APIs
+        // Allow any origin for public widget APIs dynamically
         corsOptions = {
-            origin: true,
+            origin: function (origin, cb) { cb(null, true); },
             credentials: true,
             methods: ['GET', 'POST', 'OPTIONS'],
-            allowedHeaders: ['Content-Type', 'Authorization']
+            allowedHeaders: ['Content-Type', 'Authorization', 'x-requested-with']
         };
     } else {
         // Strict origin check for dashboard operations
         const origin = req.header('Origin');
-        if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+        if (!origin || allowedOrigins.indexOf(origin) !== -1 || origin === 'null') {
             corsOptions = {
                 origin: true,
                 credentials: true,
                 methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-                allowedHeaders: ['Content-Type', 'Authorization']
+                allowedHeaders: ['Content-Type', 'Authorization', 'x-requested-with']
             };
         } else {
-            // Block origin gracefully (returning false blocks it without throwing an unhandled 500 Error like we saw before)
+            console.warn('[CORS] Blocked dashboard request from unlisted origin:', origin);
+            // Block origin gracefully
             corsOptions = { origin: false };
         }
     }
@@ -68,12 +70,25 @@ const corsOptionsDelegate = function (req, callback) {
     callback(null, corsOptions);
 };
 
+// Logger middleware to trace all incoming requests
+app.use((req, res, next) => {
+    console.log(`[HTTP] ${req.method} ${req.url} (Origin: ${req.header('Origin')})`);
+    next();
+});
+
 app.use(cors(corsOptionsDelegate));
 app.use(bodyParser.json({
+    limit: '5mb',
     verify: (req, res, buf) => {
         req.rawBody = buf;
     }
 }));
+
+// Global error handler so Vite proxy doesn't receive an empty body drop on 500 errors
+app.use((err, req, res, next) => {
+    console.error('[Global Error]', err);
+    res.status(500).json({ error: 'Internal Server Error' });
+});
 
 // Security Headers for Firebase Auth (Google Sign In)
 app.use((req, res, next) => {
@@ -86,8 +101,8 @@ app.use(express.static(path.join(__dirname, '../client/public'))); // Serve widg
 // Rate Limiter
 const rateLimit = require('express-rate-limit');
 const chatLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // Limit to 100 requests per windowMs
+    windowMs: 15 * 60 * 1000,
+    max: 100,
     message: { error: 'Too many requests, please try again later.' }
 });
 
@@ -100,7 +115,6 @@ app.use('/api/auth', authRoutes);
 app.use('/api/documents', require('./routes/documents'));
 app.use('/api/payments', require('./routes/payments'));
 app.use('/api', apiRoutes);
-
 // WebSocket logic
 wss.on('connection', (ws) => {
     console.log('New WebSocket connection');
@@ -118,6 +132,6 @@ wss.on('connection', (ws) => {
 // Ideally, we'd pass wss to the route handler.
 
 // Start Server
-server.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
+server.listen(PORT, '0.0.0.0', () => {
+    console.log(`Server running on http://0.0.0.0:${PORT}`);
 });

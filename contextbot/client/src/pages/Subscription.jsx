@@ -62,8 +62,13 @@ const Subscription = () => {
     const handleSubscribe = async (planKey) => {
         setLoading(true);
         try {
-            // Product IDs for Dodo Payments (Test Mode)
-            const productIds = {
+            // Product IDs for Dodo Payments
+            const environment = import.meta.env.VITE_DODO_ENVIRONMENT || 'test_mode';
+
+            const productIds = environment === 'live_mode' ? {
+                'starter': 'pdt_0NYMEdJYoVjWhd1qr8F1a',
+                'pro': 'pdt_0NYMEcMzHkdcJc9cdNc6T'
+            } : {
                 'starter': 'pdt_0NXkYjtOdaPqAJ2dtluNG',
                 'pro': 'pdt_0NXkYqWNBTn5p9rtp5oGY'
             };

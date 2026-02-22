@@ -23,11 +23,71 @@ const CreateProject = () => {
         instagram: '',
         linkedin: '',
         availableHours: '',
-        widgetColor: '#2563eb'
+        widgetColor: '#2563eb',
+        agentName: 'Support Agent',
+        agentAvatar: ''
     });
+
+    const [quickQuestions, setQuickQuestions] = useState([{ question: '', answer: '' }]);
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
+    };
+
+    const handleQuestionChange = (index, field, value) => {
+        const newQs = [...quickQuestions];
+        newQs[index][field] = value;
+        setQuickQuestions(newQs);
+    };
+
+    const handleAvatarUpload = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = (event) => {
+            const img = new Image();
+            img.src = event.target.result;
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const MAX_WIDTH = 150;
+                const MAX_HEIGHT = 150;
+                let width = img.width;
+                let height = img.height;
+
+                if (width > height) {
+                    if (width > MAX_WIDTH) {
+                        height *= MAX_WIDTH / width;
+                        width = MAX_WIDTH;
+                    }
+                } else {
+                    if (height > MAX_HEIGHT) {
+                        width *= MAX_HEIGHT / height;
+                        height = MAX_HEIGHT;
+                    }
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+
+                const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+                setFormData(prev => ({ ...prev, agentAvatar: dataUrl }));
+            };
+        };
+    };
+
+    const addQuestion = () => {
+        if (quickQuestions.length < 4) {
+            setQuickQuestions([...quickQuestions, { question: '', answer: '' }]);
+        }
+    };
+
+    const removeQuestion = (index) => {
+        const newQs = quickQuestions.filter((_, i) => i !== index);
+        setQuickQuestions(newQs);
     };
 
     const handleSubmit = async (e) => {
@@ -56,10 +116,17 @@ const CreateProject = () => {
                 widgetColor: formData.widgetColor
             };
 
+            const cleanQuestions = quickQuestions.filter(q => q.question.trim() !== '');
+
             const res = await axios.post('/api/profiles', {
                 name: formData.name,
                 context: context,
-                widgetColor: formData.widgetColor
+                widgetColor: formData.widgetColor,
+                quickQuestions: cleanQuestions,
+                settings: {
+                    agentName: formData.agentName,
+                    agentAvatar: formData.agentAvatar
+                }
             });
 
             const newProjectId = res.data.id || res.data._id; // Adapt based on actual response structure
@@ -165,6 +232,42 @@ const CreateProject = () => {
                                 onChange={handleChange}
                             />
                             <p className="text-xs text-slate-400 mt-2 text-right">This informs the AI's personality and knowledge base.</p>
+                        </div>
+
+                        <div className="md:col-span-1">
+                            <label className="block text-sm font-medium text-slate-700 mb-2">
+                                Agent Name
+                            </label>
+                            <input
+                                type="text"
+                                name="agentName"
+                                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none"
+                                placeholder="e.g., Support Agent"
+                                value={formData.agentName}
+                                onChange={handleChange}
+                            />
+                        </div>
+
+                        <div className="md:col-span-1">
+                            <label className="block text-sm font-medium text-slate-700 mb-2">
+                                Agent Avatar (Image)
+                            </label>
+                            <div className="flex items-center gap-4">
+                                {formData.agentAvatar ? (
+                                    <img src={formData.agentAvatar} alt="Agent Avatar" className="w-12 h-12 rounded-full object-cover border-2 border-slate-200/50 shadow-sm" />
+                                ) : (
+                                    <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center border border-slate-200 border-dashed text-slate-400">
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                    </div>
+                                )}
+                                <div className="flex-1">
+                                    <label className="cursor-pointer inline-flex items-center justify-center w-full px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
+                                        <span>Upload Photo</span>
+                                        <input type="file" className="hidden" accept="image/png, image/jpeg, image/jpg" onChange={handleAvatarUpload} />
+                                    </label>
+                                    <p className="text-[11px] text-slate-400 mt-1.5 px-0.5">JPG or PNG (max 5MB)</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -383,6 +486,67 @@ const CreateProject = () => {
                                     ></div>
                                 </div>
                             </div>
+                        )}
+                    </div>
+                </div>
+
+                {/* Quick Chat Questions */}
+                <div className="bg-white p-8 rounded-xl shadow-[0_2px_10px_-3px_rgba(0,0,0,0.05)] border border-slate-100">
+                    <div className="flex justify-between items-center mb-6">
+                        <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                            <span className="w-8 h-8 rounded-lg bg-pink-50 text-pink-600 flex items-center justify-center text-sm">6</span>
+                            Quick Chat Questions
+                        </h2>
+                        {quickQuestions.length < 4 && (
+                            <button
+                                type="button"
+                                onClick={addQuestion}
+                                className="text-sm px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md transition font-medium"
+                            >
+                                + Add Question
+                            </button>
+                        )}
+                    </div>
+                    <p className="text-sm text-slate-500 mb-6">Pre-fill standard questions users can click directly on the chat widget. You can provide optional answers, ensuring exactly how the AI responds.</p>
+
+                    <div className="space-y-6">
+                        {quickQuestions.map((q, index) => (
+                            <div key={index} className="p-5 border border-slate-200 rounded-lg bg-slate-50 relative">
+                                <button
+                                    type="button"
+                                    onClick={() => removeQuestion(index)}
+                                    className="absolute top-3 right-3 text-red-400 hover:text-red-600 transition"
+                                    title="Remove option"
+                                >
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                </button>
+                                <div className="pr-8">
+                                    <div className="mb-4">
+                                        <label className="block text-sm font-medium text-slate-700 mb-1">Clickable Question {index + 1}</label>
+                                        <input
+                                            type="text"
+                                            className="w-full px-4 py-2 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all outline-none"
+                                            placeholder="e.g., What are your pricing plans?"
+                                            value={q.question}
+                                            onChange={(e) => handleQuestionChange(index, 'question', e.target.value)}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 mb-1">Predefined Answer (Optional)</label>
+                                        <textarea
+                                            rows="2"
+                                            className="w-full px-4 py-2 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all outline-none resize-none"
+                                            placeholder="Provide the exact text you want the AI to reply with..."
+                                            value={q.answer}
+                                            onChange={(e) => handleQuestionChange(index, 'answer', e.target.value)}
+                                        ></textarea>
+                                        <p className="text-xs text-slate-400 mt-1">If empty, AI will parse the document context dynamically to find an answer.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                        {quickQuestions.length === 0 && (
+                            <div className="text-center py-6 text-sm text-slate-500 italic">No quick questions defined.</div>
                         )}
                     </div>
                 </div>
