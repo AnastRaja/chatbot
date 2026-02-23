@@ -68,8 +68,6 @@ const Dashboard = () => {
         };
 
         fetchAnalytics();
-        const interval = setInterval(fetchAnalytics, 30000); // Poll every 30s
-        return () => clearInterval(interval);
     }, [selectedProjectId]);
 
     // Loading State

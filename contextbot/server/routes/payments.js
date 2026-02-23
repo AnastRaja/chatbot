@@ -6,8 +6,8 @@ const DodoPayments = require('dodopayments');
 // Initialize Dodo Client
 const isLiveMode = process.env.DODO_ENVIRONMENT === 'live_mode';
 const client = new DodoPayments({
-    bearerToken: isLiveMode ? process.env.DODO_PAYMENTS_LIVE_API_KEY : process.env.DODO_PAYMENTS_API_KEY,
-    webhookKey: process.env.DODO_PAYMENTS_WEBHOOK_SECRET, // using test webhook secret since webhook is untouched per user
+    bearerToken: isLiveMode ? process.env.DODO_PAYMENTS_LIVE_API_KEY : process.env.DODO_PAYMENTS_TEST_API_KEY,
+    webhookKey: isLiveMode ? process.env.DODO_PAYMENTS_LIVE_WEBHOOK_SECRET : process.env.DODO_PAYMENTS_TEST_WEBHOOK_SECRET,
     environment: isLiveMode ? 'live_mode' : 'test_mode'
 });
 
@@ -103,8 +103,8 @@ async function handleSubscriptionUpdate(subscription, forceDowngrade = false) {
     // Map product_id to plan name
     let plan = 'free';
     if (isActive) {
-        const starterIds = [process.env.DODO_PRODUCT_ID_STARTER, process.env.DODO_LIVE_PRODUCT_ID_STARTER];
-        const proIds = [process.env.DODO_PRODUCT_ID_PRO, process.env.DODO_LIVE_PRODUCT_ID_PRO];
+        const starterIds = [process.env.DODO_PRODUCT_ID_TEST_STARTER, process.env.DODO_PRODUCT_ID_LIVE_STARTER];
+        const proIds = [process.env.DODO_PRODUCT_ID_TEST_PRO, process.env.DODO_PRODUCT_ID_LIVE_PRO];
 
         if (starterIds.includes(subscription.product_id)) plan = 'starter';
         if (proIds.includes(subscription.product_id)) plan = 'pro';
@@ -143,8 +143,8 @@ router.post('/verify-subscription', async (req, res) => {
 
         let plan = 'free';
         if (isActive) {
-            const starterIds = [process.env.DODO_PRODUCT_ID_STARTER, process.env.DODO_LIVE_PRODUCT_ID_STARTER];
-            const proIds = [process.env.DODO_PRODUCT_ID_PRO, process.env.DODO_LIVE_PRODUCT_ID_PRO];
+            const starterIds = [process.env.DODO_PRODUCT_ID_TEST_STARTER, process.env.DODO_PRODUCT_ID_LIVE_STARTER];
+            const proIds = [process.env.DODO_PRODUCT_ID_TEST_PRO, process.env.DODO_PRODUCT_ID_LIVE_PRO];
 
             if (starterIds.includes(subscription.product_id)) plan = 'starter';
             if (proIds.includes(subscription.product_id)) plan = 'pro';

@@ -11,8 +11,6 @@ const Chats = () => {
 
     useEffect(() => {
         fetchChats();
-        const interval = setInterval(fetchChats, 10000); // Poll every 10s
-        return () => clearInterval(interval);
     }, []);
 
     const fetchChats = async () => {

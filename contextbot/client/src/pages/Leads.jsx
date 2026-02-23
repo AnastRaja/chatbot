@@ -19,9 +19,6 @@ const Leads = () => {
             }
         };
         fetchLeads();
-        // Poll for new leads
-        const interval = setInterval(fetchLeads, 5000);
-        return () => clearInterval(interval);
     }, []);
 
     const handleDelete = async (id) => {
