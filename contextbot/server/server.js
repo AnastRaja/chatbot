@@ -40,7 +40,7 @@ const corsOptionsDelegate = function (req, callback) {
         '/api/widget/config'
     ];
 
-    const isPublicPath = publicPaths.some(path => req.path.startsWith(path));
+    const isPublicPath = publicPaths.some(path => req.path === path || req.path.startsWith(path + '/'));
 
     if (isPublicPath) {
         // Allow any origin for public widget APIs dynamically

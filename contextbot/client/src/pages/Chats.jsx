@@ -1,13 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useAppContext } from '../context/AppContext';
+import { ChevronDown } from 'lucide-react';
 
 const Chats = () => {
     const [chats, setChats] = useState([]);
     const [selectedChat, setSelectedChat] = useState(null);
     const [messages, setMessages] = useState([]);
     const [loading, setLoading] = useState(false);
-    const { } = useAppContext(); // Removed token from destructuring
+    const { profiles } = useAppContext();
+    const [selectedProjectId, setSelectedProjectId] = useState('all');
+
+    const profilesArray = Object.values(profiles || {});
 
     useEffect(() => {
         fetchChats();
@@ -56,14 +60,41 @@ const Chats = () => {
         setMessages([]);
     };
 
+    const filteredChats = selectedProjectId === 'all'
+        ? chats
+        : chats.filter(chat => chat.projectId === selectedProjectId);
+
     return (
         <div className="p-8 h-screen flex flex-col">
-            <h2 className="text-2xl font-bold text-slate-800 mb-6 flex items-center gap-2">
-                <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-                </svg>
-                Chat History
-            </h2>
+            <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
+                    <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                    </svg>
+                    Chat History
+                </h2>
+
+                <div className="flex items-center gap-3">
+                    <div className="relative">
+                        <select
+                            className="appearance-none bg-white border border-gray-200 text-gray-700 py-2.5 pl-4 pr-10 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium text-sm shadow-sm hover:border-gray-300 transition-colors min-w-[220px]"
+                            value={selectedProjectId}
+                            onChange={(e) => {
+                                setSelectedProjectId(e.target.value);
+                                setSelectedChat(null);
+                            }}
+                        >
+                            <option value="all">All Projects</option>
+                            {profilesArray.map(p => (
+                                <option key={p.id} value={p.id}>{p.name}</option>
+                            ))}
+                        </select>
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+                            <ChevronDown className="w-4 h-4" />
+                        </div>
+                    </div>
+                </div>
+            </div>
 
             <div className="flex gap-6 h-full overflow-hidden">
                 {/* Chat List */}
@@ -88,7 +119,7 @@ const Chats = () => {
                                 </thead>
                             )}
                             <tbody className="text-sm divide-y divide-slate-100">
-                                {chats.map(chat => (
+                                {filteredChats.map(chat => (
                                     <tr
                                         key={chat._id}
                                         onClick={() => handleViewChat(chat)}
@@ -125,7 +156,7 @@ const Chats = () => {
                                         </td>
                                     </tr>
                                 ))}
-                                {chats.length === 0 && (
+                                {filteredChats.length === 0 && (
                                     <tr>
                                         <td colSpan="4" className="p-8 text-center text-slate-400">No active chats found.</td>
                                     </tr>
