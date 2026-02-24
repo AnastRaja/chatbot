@@ -100,6 +100,8 @@ const LiveMonitor = () => {
                     setSessions(prev => [data.payload, ...prev]);
                 } else if (data.type === 'SESSION_UPDATED') {
                     setSessions(prev => prev.map(s => s._id === data.payload._id ? data.payload : s));
+                } else if (data.type === 'SESSION_SUMMARY') {
+                    setSessions(prev => prev.map(s => s._id === data.payload.sessionId ? { ...s, summary: data.payload.summary } : s));
                 }
             } catch (err) {
                 console.error('WS parse error', err);
@@ -260,6 +262,17 @@ const LiveMonitor = () => {
                                 </span>
                             )}
                         </div>
+
+                        {activeSession?.summary && (
+                            <div className="bg-yellow-50 border-b border-yellow-200 p-4 shrink-0 shadow-inner">
+                                <h4 className="text-xs font-bold text-yellow-800 uppercase tracking-wider mb-1 flex items-center gap-1">
+                                    <span>✨</span> AI Summary
+                                </h4>
+                                <p className="text-sm text-yellow-900 leading-relaxed whitespace-pre-wrap">
+                                    {activeSession.summary}
+                                </p>
+                            </div>
+                        )}
 
                         <div className="flex-1 overflow-y-auto p-6 space-y-4">
                             {messages.map((msg, idx) => {

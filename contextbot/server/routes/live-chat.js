@@ -5,6 +5,32 @@ const Message = require('../models/Message');
 const Project = require('../models/Project');
 const wsManager = require('../utils/websocket');
 const auth = require('../middleware/auth');
+const AIService = require('../services/AIService');
+
+// Generate Chat Summary
+router.post('/:projectId/session/:sessionId/summary', auth, async (req, res) => {
+    try {
+        const { projectId, sessionId } = req.params;
+        const project = await Project.findOne({ id: projectId, userId: req.user.uid });
+        if (!project) return res.status(403).json({ error: 'Unauthorized' });
+
+        const session = await ChatSession.findById(sessionId);
+        if (!session || session.projectId !== projectId) return res.status(404).json({ error: 'Session not found' });
+
+        const messages = await Message.find({ chatSessionId: sessionId }).sort({ timestamp: 1 }).lean();
+
+        if (messages.length === 0) {
+            return res.json({ summary: "No messages to summarize." });
+        }
+
+        const summary = await AIService.generateChatSummary(messages);
+
+        res.json({ summary });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
 
 // Get all active sessions for a project
 router.get('/:projectId/sessions', auth, async (req, res) => {
@@ -49,6 +75,18 @@ router.post('/:projectId/session/:sessionId/takeover', auth, async (req, res) =>
 
         // Notify widget that an agent joined
         wsManager.sendToWidget(sessionId, 'AGENT_JOINED', { agentName: req.user.email || 'Support Agent' });
+
+        // Generate summary asynchronously and send via WS
+        Message.find({ chatSessionId: sessionId }).sort({ timestamp: 1 }).lean().then(async (messages) => {
+            if (messages.length > 0) {
+                try {
+                    const summary = await AIService.generateChatSummary(messages);
+                    wsManager.broadcastToDashboard('SESSION_SUMMARY', { sessionId, summary });
+                } catch (summaryErr) {
+                    console.error('Initial summary generation failed:', summaryErr);
+                }
+            }
+        });
 
         res.json({ success: true, session });
     } catch (err) {

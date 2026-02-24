@@ -184,6 +184,40 @@ class AIService {
             throw error;
         }
     }
+
+    async generateChatSummary(messages) {
+        try {
+            console.log(`[AIService] Generating chat summary`);
+
+            if (!messages || messages.length === 0) {
+                return "No conversation history to summarize.";
+            }
+
+            // Convert to a readable string format for the prompt
+            const conversationText = messages.map(m => `${m.sender}: ${m.content}`).join('\n');
+            const summaryPrompt = `
+You are an expert summarizer. Please provide a brief, concise summary of the following customer service chat.
+Focus on the user's intent, the main topic or issue, and the outcome or next steps.
+Keep the summary under 3-4 sentences.
+
+### CONVERSATION
+${conversationText}
+### SUMMARY
+`;
+
+            const response = await openai.chat.completions.create({
+                model: 'gpt-4o-mini', // Using a fast/cheap model for quick summaries
+                messages: [{ role: 'system', content: summaryPrompt }],
+                temperature: 0.5,
+                max_tokens: 150
+            });
+
+            return response.choices[0].message.content.trim();
+        } catch (error) {
+            console.error('[AIService] Summary Error:', error);
+            return "Failed to generate summary.";
+        }
+    }
 }
 
 module.exports = new AIService();
