@@ -6,6 +6,7 @@ const { v4: uuidv4 } = require('uuid');
 const AIService = require('./AIService');
 const DocumentService = require('./DocumentService');
 const { extractLeads } = require('../utils/leadExtractor');
+const wsManager = require('../utils/websocket');
 
 class ChatService {
 
@@ -37,15 +38,18 @@ class ChatService {
         if (!session) {
             session = await ChatSession.create({ projectId });
             console.log(`[ChatService] Created new session ${session._id} for project ${projectId}`);
+            try { wsManager.broadcastToDashboard('SESSION_CREATED', session); } catch (e) { }
         }
 
         // 3. Save User Message
-        await Message.create({
+        const userMsg = await Message.create({
             chatSessionId: session._id,
             projectId: projectId,
             sender: 'user',
             content: text
         });
+
+        try { wsManager.broadcastToDashboard('NEW_MESSAGE', userMsg); } catch (e) { }
 
         // 4. Update Session Timestamp
         session.lastMessageAt = new Date();
@@ -115,6 +119,16 @@ class ChatService {
 
         console.log('[ChatService] Messages for AI:', JSON.stringify(messagesForAI, null, 2));
 
+        // 6.7 Check if Agent is Active
+        if (session.isAgentActive) {
+            console.log(`[ChatService] Agent is active for session ${session._id}. Bypassing AI.`);
+            return {
+                response: null,
+                sessionId: session._id,
+                isAgentActive: true
+            };
+        }
+
         // 7. Generate AI Response
         let botResponseText = await AIService.generateResponse(project, messagesForAI);
         let leadDataExtracted = null;
@@ -136,12 +150,14 @@ class ChatService {
         }
 
         // 8. Save Bot Message
-        await Message.create({
+        const botMsg = await Message.create({
             chatSessionId: session._id,
             projectId: projectId,
             sender: 'bot',
             content: botResponseText
         });
+
+        try { wsManager.broadcastToDashboard('NEW_MESSAGE', botMsg); } catch (e) { }
 
         // 9. Process Extracted Leads (Both Regex and AI-JSON)
         // We combine the raw regex extraction with the high-quality AI extraction

@@ -25,6 +25,13 @@ const ChatSessionSchema = new mongoose.Schema({
         device: String,
         ip: String,
         userAgent: String
+    },
+    isAgentActive: {
+        type: Boolean,
+        default: false
+    },
+    agentId: {
+        type: String
     }
 });
 

@@ -14,7 +14,8 @@ const ProjectSchema = new mongoose.Schema({
         agentName: { type: String, default: 'Support Agent' },
         agentAvatar: { type: String, default: '' },
         welcomeMessage: { type: String, default: 'Hello! How can I help you today?' },
-        autoOpenDelay: { type: Number, default: 5000 } // 0 to disable
+        autoOpenDelay: { type: Number, default: 5000 }, // 0 to disable
+        systemPrompt: { type: String, default: '' }
     },
     quickQuestions: {
         type: [{

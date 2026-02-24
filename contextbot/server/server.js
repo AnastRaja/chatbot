@@ -3,16 +3,18 @@ const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const http = require('http');
-const WebSocket = require('ws');
 const path = require('path');
 const connectDB = require('./config/db');
 require('dotenv').config();
 
 const apiRoutes = require('./routes/api');
+const wsManager = require('./utils/websocket');
 
 const app = express();
 const server = http.createServer(app);
-const wss = new WebSocket.Server({ server });
+
+// Initialize WebSockets
+wsManager.init(server);
 
 // Connect to Database
 connectDB();
@@ -114,16 +116,8 @@ const authRoutes = require('./routes/auth');
 app.use('/api/auth', authRoutes);
 app.use('/api/documents', require('./routes/documents'));
 app.use('/api/payments', require('./routes/payments'));
+app.use('/api/live-chat', require('./routes/live-chat'));
 app.use('/api', apiRoutes);
-// WebSocket logic
-wss.on('connection', (ws) => {
-    console.log('New WebSocket connection');
-    ws.on('message', (message) => {
-        // Echo or broadcast if needed
-        console.log('received: %s', message);
-    });
-    ws.send(JSON.stringify({ type: 'WELCOME', message: 'Connected to ContextBot Realtime' }));
-});
 
 // Broadcast helper (attached to global/app locally for now or exported if needed)
 // For simplicity in this mono-file setup, we can't easily export wss to routes without circular deps 

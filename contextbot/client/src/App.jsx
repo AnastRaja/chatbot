@@ -17,9 +17,7 @@ import ProjectsList from './pages/ProjectsList';
 import EditProject from './pages/EditProject';
 import WidgetConfig from './pages/WidgetConfig';
 import Subscription from './pages/Subscription';
-
-// Placeholder Pages
-const Activity = () => <div className="p-8"><h2 className="text-2xl font-bold">Activity Log</h2><p className="text-gray-500">Real-time chat monitoring coming soon.</p></div>;
+import LiveMonitor from './pages/LiveMonitor';
 
 // Protected Route Wrapper
 const ProtectedRoute = ({ children }) => {
@@ -94,10 +92,10 @@ function AppRoutes() {
         </ProtectedRoute>
       } />
 
-      <Route path="/activity" element={
+      <Route path="/live" element={
         <ProtectedRoute>
           <MainLayout>
-            <Activity />
+            <LiveMonitor />
           </MainLayout>
         </ProtectedRoute>
       } />

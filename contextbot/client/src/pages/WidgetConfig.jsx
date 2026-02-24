@@ -12,7 +12,8 @@ const WidgetConfig = () => {
         agentName: '',
         welcomeMessage: '',
         widgetColor: '#2563eb',
-        autoOpenDelay: 5000
+        autoOpenDelay: 5000,
+        systemPrompt: ''
     });
 
     useEffect(() => {
@@ -30,7 +31,8 @@ const WidgetConfig = () => {
                         agentName: project.settings?.agentName || 'Support Agent',
                         welcomeMessage: project.settings?.welcomeMessage || 'Hello! How can I help you today?',
                         widgetColor: project.widgetColor || '#2563eb',
-                        autoOpenDelay: project.settings?.autoOpenDelay ?? 5000
+                        autoOpenDelay: project.settings?.autoOpenDelay ?? 5000,
+                        systemPrompt: project.settings?.systemPrompt || ''
                     });
                 }
                 setLoading(false);
@@ -62,7 +64,8 @@ const WidgetConfig = () => {
                     ...currentProject.settings,
                     agentName: config.agentName,
                     welcomeMessage: config.welcomeMessage,
-                    autoOpenDelay: parseInt(config.autoOpenDelay)
+                    autoOpenDelay: parseInt(config.autoOpenDelay),
+                    systemPrompt: config.systemPrompt
                 }
             };
 
@@ -135,6 +138,17 @@ const WidgetConfig = () => {
                                 placeholder="5000"
                             />
                             <p className="text-xs text-slate-500 mt-1">Set to 0 to disable auto-open. Defaults to 5000 (5 seconds).</p>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-1">System Prompt</label>
+                            <textarea
+                                value={config.systemPrompt}
+                                onChange={e => setConfig({ ...config, systemPrompt: e.target.value })}
+                                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none h-32 resize-none"
+                                placeholder="You are a helpful customer support agent for Leadvox..."
+                            />
+                            <p className="text-xs text-slate-500 mt-1">Custom instructions for how the AI should behave.</p>
                         </div>
 
                         <div className="pt-4">

@@ -119,8 +119,19 @@
             </div>
         </div>
         <div class="flex items-center gap-1">
+            <button type="button"
+                class="p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors active:scale-95 group"
+                title="Options">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="1"></circle>
+                    <circle cx="19" cy="12" r="1"></circle>
+                    <circle cx="5" cy="12" r="1"></circle>
+                </svg>
+            </button>
             <button type="button" onclick="window.parent.postMessage({ type: 'CLOSE_WIDGET' }, '*')"
-                class="p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors active:scale-95 group">
+                class="p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors active:scale-95 group"
+                title="Close chat">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
                     stroke-linecap="round" stroke-linejoin="round"
                     class="group-hover:rotate-90 transition-transform duration-200">
@@ -170,12 +181,12 @@
     </div>
 
     <script>
-        // Parse Query Params
         const params = new URLSearchParams(window.location.search);
         const bizId = params.get('bizId');
         const color = params.get('color') || '#2563eb';
         const agentName = params.get('agentName') || 'Support Chat';
         const welcomeMsg = params.get('welcome') || "Hello! \uD83D\uDC4B We're here to help. Ask us anything about our services.";
+        const avatarUrl = params.get('avatar');
 
         // Styling Updates
         document.getElementById('header').style.backgroundColor = color;
@@ -184,6 +195,11 @@
         // Dynamic Content
         const headerTitle = document.querySelector('#header h1');
         headerTitle.textContent = agentName;
+
+        if (avatarUrl && avatarUrl.trim() !== '' && avatarUrl !== 'null' && avatarUrl !== 'undefined') {
+            document.getElementById('header-avatar-container').classList.remove('hidden');
+            document.getElementById('header-avatar').src = avatarUrl;
+        }
 
         const initialMsg = document.querySelector('#chat-messages div > div');
         if (initialMsg) initialMsg.textContent = welcomeMsg;
@@ -195,6 +211,47 @@
         // Session ID storage
         let chatId = sessionStorage.getItem('contextbot_chat_id');
         let pageContext = null;
+        let ws = null;
+
+        function connectWebSocket(id) {
+            if (ws || !id) return;
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            // Use the same host where the widget was loaded from, with expected query params
+            ws = new WebSocket(`${protocol}//${window.location.host}/socket?type=widget&chatId=${id}`);
+
+            ws.onopen = () => {
+                console.log('ContextBot: Widget connected to live chat socket');
+            };
+
+            ws.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    // Match the structure from the server's sendToWidget
+                    // It uses JSON.stringify({ type: eventType, payload })
+                    if (data.type === 'NEW_MESSAGE' && data.payload) {
+                        const msg = data.payload;
+                        if (msg.sender === 'bot' || msg.sender === 'agent') {
+                            // Remove loading indicator if it exists
+                            const loadingIds = document.querySelectorAll('[id^="loading-"]');
+                            loadingIds.forEach(el => el.remove());
+                            appendMessage(msg.content, 'bot'); // Display agent message
+                        }
+                    }
+                } catch (e) {
+                    console.error('WS parse error:', e);
+                }
+            };
+
+            ws.onclose = () => {
+                ws = null;
+                // Try to reconnect
+                setTimeout(() => connectWebSocket(id), 5000);
+            };
+        }
+
+        if (chatId) {
+            connectWebSocket(chatId);
+        }
 
         // Listen for context from parent widget.js
         window.addEventListener('message', (event) => {
@@ -202,7 +259,7 @@
                 pageContext = event.data;
                 console.log('ContextBot: Received page context', pageContext.title);
 
-                // Check for avatar
+                // Check for avatar update gracefully if it changed somehow
                 if (pageContext.agentAvatar && pageContext.agentAvatar.trim() !== '') {
                     document.getElementById('header-avatar-container').classList.remove('hidden');
                     document.getElementById('header-avatar').src = pageContext.agentAvatar;
@@ -286,16 +343,27 @@
                 const data = await response.json();
 
                 if (data.chatId) {
-                    chatId = data.chatId;
-                    sessionStorage.setItem('contextbot_chat_id', chatId);
+                    if (!chatId) {
+                        chatId = data.chatId;
+                        sessionStorage.setItem('contextbot_chat_id', chatId);
+                        connectWebSocket(chatId);
+                    }
                 }
 
-                document.getElementById(loadingId).remove();
-                appendMessage(data.response || 'Sorry, I encounted an error.', 'bot');
+                // Remove loading indicator
+                const loadingEl = document.getElementById(loadingId);
+                if (loadingEl) loadingEl.remove();
+
+                if (data.response) {
+                    appendMessage(data.response, 'bot');
+                } else if (!data.isAgentActive) {
+                    appendMessage('Sorry, I encountered an error.', 'bot');
+                }
 
             } catch (error) {
                 console.error(error);
-                document.getElementById(loadingId).remove();
+                const loadingEl = document.getElementById(loadingId);
+                if (loadingEl) loadingEl.remove();
                 appendMessage('Error connecting to server.', 'bot');
             } finally {
                 input.disabled = false;

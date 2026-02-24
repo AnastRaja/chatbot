@@ -101,7 +101,8 @@
             host: host,
             color: config.primaryColor,
             agentName: config.agentName,
-            welcome: config.welcomeMessage
+            welcome: config.welcomeMessage,
+            avatar: config.agentAvatar
         });
 
         iframe.src = `${host}/widget-chat.html?${params.toString()}`;

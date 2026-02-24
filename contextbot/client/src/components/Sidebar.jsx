@@ -14,7 +14,7 @@ const Sidebar = () => {
         { name: 'Projects', path: '/projects', icon: FolderKanban },
         { name: 'Leads', path: '/leads', icon: Users },
         { name: 'Chats', path: '/chats', icon: MessageSquare },
-        // { name: 'Activity', path: '/activity', icon: Activity },
+        { name: 'Live Chat', path: '/live', icon: Activity },
         { name: 'Subscription', path: '/subscription', icon: CreditCard },
     ];
 

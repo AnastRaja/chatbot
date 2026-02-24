@@ -165,7 +165,7 @@ router.post('/chat', async (req, res) => {
 
     try {
         const result = await ChatService.handleIncomingMessage(bizId, chatId, message, pageContext);
-        res.json({ response: result.response, chatId: result.sessionId });
+        res.json({ response: result.response, chatId: result.sessionId, isAgentActive: result.isAgentActive });
     } catch (error) {
         console.error('Chat Error:', error);
         res.status(500).json({ error: 'AI Error or Project Not Found' });
