@@ -4,14 +4,13 @@ import { useAppContext } from '../context/AppContext';
 const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? 'https://chatbot-op25.onrender.com' : 'http://localhost:3000');
 
 const LiveMonitor = () => {
-    const { isAuthenticated } = useAppContext();
+    const { isAuthenticated, addLiveChatListener, unreadCounts, clearUnreadCount } = useAppContext();
     const [projects, setProjects] = useState([]);
     const [selectedProjectId, setSelectedProjectId] = useState('');
     const [sessions, setSessions] = useState([]);
     const [selectedSessionId, setSelectedSessionId] = useState(null);
     const [messages, setMessages] = useState([]);
     const [inputText, setInputText] = useState('');
-    const [ws, setWs] = useState(null);
     const selectedSessionIdRef = useRef(null);
     const selectedProjectIdRef = useRef('');
 
@@ -52,13 +51,6 @@ const LiveMonitor = () => {
         selectedProjectIdRef.current = selectedProjectId;
     }, [selectedProjectId]);
 
-    // Request browser notification permission once
-    useEffect(() => {
-        if ('Notification' in window && Notification.permission === 'default') {
-            Notification.requestPermission();
-        }
-    }, []);
-
     // Fetch active sessions for selected project
     useEffect(() => {
         const localToken = localStorage.getItem('authToken');
@@ -75,98 +67,54 @@ const LiveMonitor = () => {
             }
         };
         fetchSessions();
-        // Option: Poll every 10s or rely purely on WebSocket
     }, [selectedProjectId]);
 
-    // WebSocket
+    // Listen to global WebSocket events (forwarded from AppContext)
     useEffect(() => {
-        const localToken = localStorage.getItem('authToken');
-        if (!localToken) return;
-        const wsUrl = API_URL.replace(/^http/, 'ws');
-        const socket = new WebSocket(`${wsUrl}?token=${localToken}&type=dashboard`);
-
-        // --- Beep using Web Audio API (no external files) ---
-        function playBeep(freq = 880, duration = 0.18, vol = 0.35) {
-            try {
-                const ctx = new (window.AudioContext || window.webkitAudioContext)();
-                const osc = ctx.createOscillator();
-                const gain = ctx.createGain();
-                osc.connect(gain);
-                gain.connect(ctx.destination);
-                osc.type = 'sine';
-                osc.frequency.value = freq;
-                gain.gain.setValueAtTime(vol, ctx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
-                osc.start(ctx.currentTime);
-                osc.stop(ctx.currentTime + duration);
-            } catch (_) { }
-        }
-
-        function showNotification(title, body) {
-            if ('Notification' in window && Notification.permission === 'granted') {
-                new Notification(title, { body, icon: '/favicon.ico', silent: true });
-            }
-        }
-
-        socket.onopen = () => console.log('LiveMonitor WS Connected');
-        socket.onmessage = (event) => {
-            try {
-                const data = JSON.parse(event.data);
-                if (data.type === 'NEW_MESSAGE') {
-                    const msg = data.payload;
-                    // Update sessions list with last message snippet
-                    setSessions(prev => {
-                        const existing = prev.find(s => s._id === msg.chatSessionId);
-                        if (existing) {
-                            return prev.map(s => s._id === msg.chatSessionId ? { ...s, lastMessage: msg.content, lastMessageAt: new Date().toISOString() } : s);
-                        } else {
-                            return [{ _id: msg.chatSessionId, projectId: msg.projectId, status: 'active', lastMessage: msg.content, lastMessageAt: new Date().toISOString() }, ...prev];
-                        }
-                    });
-
-                    // Update messages if this session is selected
-                    if (selectedSessionIdRef.current === msg.chatSessionId) {
-                        setMessages(prev => {
-                            if (prev.some(m => m._id === msg._id)) return prev;
-                            return [...prev, msg];
-                        });
-                    } else if (msg.sender === 'user') {
-                        // Subtle beep for new visitor message in an unselected session
-                        playBeep(660, 0.12, 0.2);
-                    }
-                } else if (data.type === 'SESSION_CREATED') {
-                    // Only add if it matches the currently viewed project
-                    if (data.payload.projectId === selectedProjectIdRef.current) {
-                        setSessions(prev => [data.payload, ...prev]);
-                    }
-                    // Play a distinct double-beep notification
-                    playBeep(880, 0.15, 0.4);
-                    setTimeout(() => playBeep(1100, 0.15, 0.4), 180);
-                    showNotification('New Chat Started 💬', 'A visitor has started a new chat session.');
-
-                } else if (data.type === 'SESSION_UPDATED') {
-                    // If the session has been closed, remove it from the list and clear selection
-                    if (data.payload.status === 'closed') {
-                        setSessions(prev => prev.filter(s => s._id !== data.payload._id));
-                        if (selectedSessionIdRef.current === data.payload._id) {
-                            setSelectedSessionId(null);
-                            setMessages([]);
-                        }
+        const removeListener = addLiveChatListener((data) => {
+            if (data.type === 'NEW_MESSAGE') {
+                const msg = data.payload;
+                // Update sessions list with last message snippet
+                setSessions(prev => {
+                    const existing = prev.find(s => s._id === msg.chatSessionId);
+                    if (existing) {
+                        return prev.map(s => s._id === msg.chatSessionId ? { ...s, lastMessage: msg.content, lastMessageAt: new Date().toISOString() } : s);
                     } else {
-                        setSessions(prev => prev.map(s => s._id === data.payload._id ? data.payload : s));
+                        return [{ _id: msg.chatSessionId, projectId: msg.projectId, status: 'active', lastMessage: msg.content, lastMessageAt: new Date().toISOString() }, ...prev];
                     }
-                } else if (data.type === 'SESSION_SUMMARY') {
-                    setSessions(prev => prev.map(s => s._id === data.payload.sessionId ? { ...s, summary: data.payload.summary } : s));
-                }
-            } catch (err) {
-                console.error('WS parse error', err);
-            }
-        };
-        socket.onclose = () => console.log('LiveMonitor WS Disconnected');
+                });
 
-        setWs(socket);
-        return () => socket.close();
-    }, []);
+                // Update messages if this session is selected
+                if (selectedSessionIdRef.current === msg.chatSessionId) {
+                    setMessages(prev => {
+                        if (prev.some(m => m._id === msg._id)) return prev;
+                        return [...prev, msg];
+                    });
+                    // Clear unread since admin is viewing this chat
+                    clearUnreadCount(msg.chatSessionId);
+                }
+            } else if (data.type === 'SESSION_CREATED') {
+                // Only add if it matches the currently viewed project
+                if (data.payload.projectId === selectedProjectIdRef.current) {
+                    setSessions(prev => [data.payload, ...prev]);
+                }
+            } else if (data.type === 'SESSION_UPDATED') {
+                if (data.payload.status === 'closed') {
+                    setSessions(prev => prev.filter(s => s._id !== data.payload._id));
+                    if (selectedSessionIdRef.current === data.payload._id) {
+                        setSelectedSessionId(null);
+                        setMessages([]);
+                    }
+                } else {
+                    setSessions(prev => prev.map(s => s._id === data.payload._id ? data.payload : s));
+                }
+            } else if (data.type === 'SESSION_SUMMARY') {
+                setSessions(prev => prev.map(s => s._id === data.payload.sessionId ? { ...s, summary: data.payload.summary } : s));
+            }
+        });
+
+        return removeListener;
+    }, [addLiveChatListener]);
 
     // Fetch messages when a session is selected
     useEffect(() => {
@@ -233,7 +181,6 @@ const LiveMonitor = () => {
             });
             const data = await res.json();
             if (data.success) {
-                // Remove ended session from sidebar and clear selection
                 setSessions(prev => prev.filter(s => s._id !== selectedSessionId));
                 setSelectedSessionId(null);
                 setMessages([]);
@@ -263,7 +210,6 @@ const LiveMonitor = () => {
                 },
                 body: JSON.stringify({ content: tempText })
             });
-            // The message will come back via WS, but we could optimistically add it here
         } catch (err) {
             console.error('Send error', err);
         }
@@ -297,11 +243,22 @@ const LiveMonitor = () => {
                         sessions.map(session => (
                             <div
                                 key={session._id}
-                                onClick={() => setSelectedSessionId(session._id)}
+                                onClick={() => {
+                                    setSelectedSessionId(session._id);
+                                    // Clear unread count when admin opens this chat
+                                    clearUnreadCount(session._id);
+                                }}
                                 className={`p-4 border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors ${selectedSessionId === session._id ? 'bg-blue-50 border-l-4 border-l-blue-500' : ''}`}
                             >
                                 <div className="flex justify-between items-start mb-1">
-                                    <span className="font-semibold text-gray-800">Visitor {session._id.slice(-4)}</span>
+                                    <div className="flex items-center gap-2">
+                                        <span className="font-semibold text-gray-800">Visitor {session._id.slice(-4)}</span>
+                                        {unreadCounts[session._id] > 0 && (
+                                            <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-[11px] font-bold text-white bg-red-500 rounded-full leading-none shadow-sm">
+                                                {unreadCounts[session._id]}
+                                            </span>
+                                        )}
+                                    </div>
                                     <span className="text-xs text-gray-400">
                                         {new Date(session.lastMessageAt || session.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                     </span>

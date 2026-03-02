@@ -7,7 +7,7 @@ import Logo from './Logo';
 const Sidebar = () => {
     const location = useLocation();
     const navigate = useNavigate();
-    const { user, logout } = useAppContext();
+    const { user, logout, totalUnreadCount } = useAppContext();
 
     const links = [
         { name: 'Dashboard', path: '/', icon: LayoutDashboard },
@@ -51,6 +51,11 @@ const Sidebar = () => {
                         >
                             <Icon className={`w-5 h-5 transition-colors ${isActive ? 'text-white' : 'text-gray-400 group-hover:text-gray-900'}`} />
                             <span>{link.name}</span>
+                            {link.path === '/live' && totalUnreadCount > 0 && (
+                                <span className="ml-auto inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-[11px] font-bold text-white bg-red-500 rounded-full leading-none shadow-sm animate-pulse">
+                                    {totalUnreadCount}
+                                </span>
+                            )}
                         </Link>
                     );
                 })}

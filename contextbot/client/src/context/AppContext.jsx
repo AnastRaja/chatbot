@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import axios from 'axios';
 import {
     onAuthStateChanged,
@@ -8,6 +8,8 @@ import {
 } from 'firebase/auth';
 import { auth } from '../firebase';
 
+const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? 'https://chatbot-op25.onrender.com' : 'http://localhost:3000');
+
 const AppContext = createContext();
 
 export const AppProvider = ({ children }) => {
@@ -15,6 +17,29 @@ export const AppProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
     const [profiles, setProfiles] = useState(null);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+    // --- Global Live Chat State ---
+    const [liveChatWs, setLiveChatWs] = useState(null);
+    const [unreadCounts, setUnreadCounts] = useState({});
+    const liveChatListenersRef = useRef([]);
+
+    // Register a listener from LiveMonitor (or any component) to receive WS events
+    const addLiveChatListener = useCallback((fn) => {
+        liveChatListenersRef.current.push(fn);
+        return () => {
+            liveChatListenersRef.current = liveChatListenersRef.current.filter(l => l !== fn);
+        };
+    }, []);
+
+    const clearUnreadCount = useCallback((sessionId) => {
+        setUnreadCounts(prev => {
+            const updated = { ...prev };
+            delete updated[sessionId];
+            return updated;
+        });
+    }, []);
+
+    const totalUnreadCount = Object.values(unreadCounts).reduce((sum, c) => sum + c, 0);
 
     // Fetch user profiles (if needed for the app)
     const fetchProfiles = async () => {
@@ -225,6 +250,81 @@ export const AppProvider = ({ children }) => {
         }
     }, [user]);
 
+    // --- Global WebSocket for Live Chat Notifications ---
+    useEffect(() => {
+        if (!isAuthenticated) return;
+        const localToken = localStorage.getItem('authToken');
+        if (!localToken) return;
+
+        const wsUrl = API_URL.replace(/^http/, 'ws');
+        const socket = new WebSocket(`${wsUrl}?token=${localToken}&type=dashboard`);
+
+        // Beep using Web Audio API
+        function playBeep(freq = 880, duration = 0.18, vol = 0.35) {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.type = 'sine';
+                osc.frequency.value = freq;
+                gain.gain.setValueAtTime(vol, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+                osc.start(ctx.currentTime);
+                osc.stop(ctx.currentTime + duration);
+            } catch (_) { }
+        }
+
+        function showNotification(title, body) {
+            if ('Notification' in window && Notification.permission === 'granted') {
+                new Notification(title, { body, icon: '/favicon.ico', silent: true });
+            }
+        }
+
+        socket.onopen = () => console.log('Global LiveChat WS Connected');
+        socket.onmessage = (event) => {
+            try {
+                const data = JSON.parse(event.data);
+
+                // Forward to any registered listeners (e.g. LiveMonitor)
+                liveChatListenersRef.current.forEach(fn => fn(data));
+
+                // Handle notifications globally
+                if (data.type === 'NEW_MESSAGE') {
+                    const msg = data.payload;
+                    if (msg.sender === 'user') {
+                        playBeep(660, 0.12, 0.2);
+                        setUnreadCounts(prev => ({
+                            ...prev,
+                            [msg.chatSessionId]: (prev[msg.chatSessionId] || 0) + 1
+                        }));
+                    }
+                } else if (data.type === 'SESSION_CREATED') {
+                    setUnreadCounts(prev => ({
+                        ...prev,
+                        [data.payload._id]: 1
+                    }));
+                    playBeep(880, 0.15, 0.4);
+                    setTimeout(() => playBeep(1100, 0.15, 0.4), 180);
+                    showNotification('New Chat Started \ud83d\udcac', 'A visitor has started a new chat session.');
+                }
+            } catch (err) {
+                console.error('Global WS parse error', err);
+            }
+        };
+        socket.onclose = () => console.log('Global LiveChat WS Disconnected');
+
+        setLiveChatWs(socket);
+
+        // Request notification permission
+        if ('Notification' in window && Notification.permission === 'default') {
+            Notification.requestPermission();
+        }
+
+        return () => socket.close();
+    }, [isAuthenticated]);
+
     return (
         <AppContext.Provider value={{
             user,
@@ -239,7 +339,13 @@ export const AppProvider = ({ children }) => {
             googleLogin,
             logout,
             forgotPassword,
-            resetPassword
+            resetPassword,
+            // Live Chat globals
+            liveChatWs,
+            unreadCounts,
+            clearUnreadCount,
+            totalUnreadCount,
+            addLiveChatListener
         }}>
             {!loading && children}
         </AppContext.Provider>
