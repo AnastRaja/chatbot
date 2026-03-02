@@ -115,7 +115,7 @@ const Subscription = () => {
             originalPrice: '',
             features: [
                 '1 Project',
-                '10 MB storage',
+                '5 MB storage',
                 '500 AI responses/month',
                 'GPT-4o mini',
                 'Branded widget (15 days trial)'
@@ -134,7 +134,7 @@ const Subscription = () => {
             period: '/month',
             features: [
                 '5 Projects',
-                '100 MB storage',
+                '50 MB storage',
                 '10,000 AI responses/month',
                 'GPT-4o mini',
                 'Unbranded widget',
@@ -154,7 +154,7 @@ const Subscription = () => {
             period: '/month',
             features: [
                 'Unlimited projects',
-                '500 MB storage',
+                '100 MB storage',
                 '50,000 AI responses/month',
                 'GPT-4o + GPT-4o mini',
                 'Priority support'

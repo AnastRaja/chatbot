@@ -220,7 +220,7 @@
             ws = new WebSocket(`${protocol}//${window.location.host}/socket?type=widget&chatId=${id}`);
 
             ws.onopen = () => {
-                console.log('ContextBot: Widget connected to live chat socket');
+                // Connected
             };
 
             ws.onmessage = (event) => {
@@ -236,9 +236,27 @@
                             loadingIds.forEach(el => el.remove());
                             appendMessage(msg.content, 'bot'); // Display agent message
                         }
+                    } else if (data.type === 'CHAT_ENDED') {
+                        // Show chat ended notification in the chat window
+                        const endMsg = (data.payload && data.payload.message)
+                            ? data.payload.message
+                            : 'This chat session has ended. Thank you for reaching out!';
+                        appendSystemMessage(endMsg);
+
+                        // Hide input form and show "Chat ended" notice
+                        const inputArea = document.querySelector('#chat-form').closest('div');
+                        if (inputArea) inputArea.style.display = 'none';
+
+                        const endedNotice = document.createElement('div');
+                        endedNotice.className = 'p-4 bg-gray-100 border-t border-gray-200 text-center text-gray-500 text-sm';
+                        endedNotice.textContent = '✅ Chat has ended';
+                        document.body.appendChild(endedNotice);
+
+                        // Clear session storage so a fresh chat can start on reload
+                        sessionStorage.removeItem('contextbot_chat_id');
                     }
                 } catch (e) {
-                    console.error('WS parse error:', e);
+                    // Silently fail parsing
                 }
             };
 
@@ -257,7 +275,6 @@
         window.addEventListener('message', (event) => {
             if (event.data && event.data.type === 'PAGE_CONTEXT') {
                 pageContext = event.data;
-                console.log('ContextBot: Received page context', pageContext.title);
 
                 // Check for avatar update gracefully if it changed somehow
                 if (pageContext.agentAvatar && pageContext.agentAvatar.trim() !== '') {
@@ -288,6 +305,17 @@
                 }
             }
         });
+
+        function appendSystemMessage(text) {
+            const div = document.createElement('div');
+            div.className = 'flex justify-center message-enter';
+            const bubble = document.createElement('div');
+            bubble.className = 'bg-amber-50 border border-amber-200 text-amber-800 rounded-xl px-4 py-2 text-[13px] text-center max-w-[90%] font-medium';
+            bubble.textContent = text;
+            div.appendChild(bubble);
+            chatContainer.appendChild(div);
+            chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: 'smooth' });
+        }
 
         function appendMessage(text, sender) {
             const div = document.createElement('div');
@@ -361,7 +389,6 @@
                 }
 
             } catch (error) {
-                console.error(error);
                 const loadingEl = document.getElementById(loadingId);
                 if (loadingEl) loadingEl.remove();
                 appendMessage('Error connecting to server.', 'bot');

@@ -5,7 +5,6 @@
     if (bizId) bizId = bizId.trim();
 
     if (!bizId) {
-        console.error('ContextBot: Missing data-id attribute.');
         return;
     }
 
@@ -41,7 +40,7 @@
                 config.agentAvatar = data.agentAvatar || '';
             }
         } catch (e) {
-            console.error('ContextBot: Failed to load config, using defaults.');
+            // Silently fail and use defaults
         }
 
         renderWidget();
@@ -176,11 +175,6 @@
         const STORAGE_KEY = 'contextbot_has_opened_' + bizId;
         const hasOpened = sessionStorage.getItem(STORAGE_KEY);
 
-        console.log('ContextBot Config:', {
-            autoOpenDelay: config.autoOpenDelay,
-            hasOpened: hasOpened
-        });
-
         if (!hasOpened && config.autoOpenDelay > 0) {
             setTimeout(() => {
                 if (!isOpen) { // Only open if not already open
@@ -248,7 +242,7 @@
                         this.visitId = data.visitId;
                     }
                 })
-                .catch(err => console.error('ContextBot Analytics Error:', err));
+                .catch(() => { });
         }
     };
 

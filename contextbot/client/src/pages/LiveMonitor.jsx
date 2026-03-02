@@ -13,6 +13,7 @@ const LiveMonitor = () => {
     const [inputText, setInputText] = useState('');
     const [ws, setWs] = useState(null);
     const selectedSessionIdRef = useRef(null);
+    const selectedProjectIdRef = useRef('');
 
     const messagesEndRef = useRef(null);
 
@@ -46,6 +47,18 @@ const LiveMonitor = () => {
             });
     }, [isAuthenticated]);
 
+    // Keep selectedProjectId ref in sync
+    useEffect(() => {
+        selectedProjectIdRef.current = selectedProjectId;
+    }, [selectedProjectId]);
+
+    // Request browser notification permission once
+    useEffect(() => {
+        if ('Notification' in window && Notification.permission === 'default') {
+            Notification.requestPermission();
+        }
+    }, []);
+
     // Fetch active sessions for selected project
     useEffect(() => {
         const localToken = localStorage.getItem('authToken');
@@ -65,12 +78,35 @@ const LiveMonitor = () => {
         // Option: Poll every 10s or rely purely on WebSocket
     }, [selectedProjectId]);
 
-    // Setup WebSocket connection
+    // WebSocket
     useEffect(() => {
         const localToken = localStorage.getItem('authToken');
         if (!localToken) return;
         const wsUrl = API_URL.replace(/^http/, 'ws');
         const socket = new WebSocket(`${wsUrl}?token=${localToken}&type=dashboard`);
+
+        // --- Beep using Web Audio API (no external files) ---
+        function playBeep(freq = 880, duration = 0.18, vol = 0.35) {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.type = 'sine';
+                osc.frequency.value = freq;
+                gain.gain.setValueAtTime(vol, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+                osc.start(ctx.currentTime);
+                osc.stop(ctx.currentTime + duration);
+            } catch (_) { }
+        }
+
+        function showNotification(title, body) {
+            if ('Notification' in window && Notification.permission === 'granted') {
+                new Notification(title, { body, icon: '/favicon.ico', silent: true });
+            }
+        }
 
         socket.onopen = () => console.log('LiveMonitor WS Connected');
         socket.onmessage = (event) => {
@@ -84,7 +120,6 @@ const LiveMonitor = () => {
                         if (existing) {
                             return prev.map(s => s._id === msg.chatSessionId ? { ...s, lastMessage: msg.content, lastMessageAt: new Date().toISOString() } : s);
                         } else {
-                            // If it's a new session, we might need to fetch it or mock it
                             return [{ _id: msg.chatSessionId, projectId: msg.projectId, status: 'active', lastMessage: msg.content, lastMessageAt: new Date().toISOString() }, ...prev];
                         }
                     });
@@ -95,11 +130,31 @@ const LiveMonitor = () => {
                             if (prev.some(m => m._id === msg._id)) return prev;
                             return [...prev, msg];
                         });
+                    } else if (msg.sender === 'user') {
+                        // Subtle beep for new visitor message in an unselected session
+                        playBeep(660, 0.12, 0.2);
                     }
                 } else if (data.type === 'SESSION_CREATED') {
-                    setSessions(prev => [data.payload, ...prev]);
+                    // Only add if it matches the currently viewed project
+                    if (data.payload.projectId === selectedProjectIdRef.current) {
+                        setSessions(prev => [data.payload, ...prev]);
+                    }
+                    // Play a distinct double-beep notification
+                    playBeep(880, 0.15, 0.4);
+                    setTimeout(() => playBeep(1100, 0.15, 0.4), 180);
+                    showNotification('New Chat Started 💬', 'A visitor has started a new chat session.');
+
                 } else if (data.type === 'SESSION_UPDATED') {
-                    setSessions(prev => prev.map(s => s._id === data.payload._id ? data.payload : s));
+                    // If the session has been closed, remove it from the list and clear selection
+                    if (data.payload.status === 'closed') {
+                        setSessions(prev => prev.filter(s => s._id !== data.payload._id));
+                        if (selectedSessionIdRef.current === data.payload._id) {
+                            setSelectedSessionId(null);
+                            setMessages([]);
+                        }
+                    } else {
+                        setSessions(prev => prev.map(s => s._id === data.payload._id ? data.payload : s));
+                    }
                 } else if (data.type === 'SESSION_SUMMARY') {
                     setSessions(prev => prev.map(s => s._id === data.payload.sessionId ? { ...s, summary: data.payload.summary } : s));
                 }
@@ -162,6 +217,29 @@ const LiveMonitor = () => {
             }
         } catch (err) {
             console.error('Takeover error', err);
+        }
+    };
+
+    const handleEndChat = async () => {
+        if (!selectedSessionId) return;
+        if (!window.confirm('Are you sure you want to end this chat? The visitor will be notified.')) return;
+        const currentSession = sessions.find(s => s._id === selectedSessionId);
+        const pId = currentSession?.projectId || selectedProjectId;
+        try {
+            const localToken = localStorage.getItem('authToken');
+            const res = await fetch(`${API_URL}/api/live-chat/${pId}/session/${selectedSessionId}/end`, {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${localToken}` }
+            });
+            const data = await res.json();
+            if (data.success) {
+                // Remove ended session from sidebar and clear selection
+                setSessions(prev => prev.filter(s => s._id !== selectedSessionId));
+                setSelectedSessionId(null);
+                setMessages([]);
+            }
+        } catch (err) {
+            console.error('End chat error', err);
         }
     };
 
@@ -257,9 +335,17 @@ const LiveMonitor = () => {
                                 </button>
                             )}
                             {activeSession?.isAgentActive && (
-                                <span className="bg-green-100 text-green-700 text-xs px-3 py-1 rounded-full font-medium border border-green-200">
-                                    You are handling this chat
-                                </span>
+                                <div className="flex items-center gap-2">
+                                    <span className="bg-green-100 text-green-700 text-xs px-3 py-1 rounded-full font-medium border border-green-200">
+                                        You are handling this chat
+                                    </span>
+                                    <button
+                                        onClick={handleEndChat}
+                                        className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded shadow-sm text-sm font-medium transition-colors"
+                                    >
+                                        End Chat
+                                    </button>
+                                </div>
                             )}
                         </div>
 

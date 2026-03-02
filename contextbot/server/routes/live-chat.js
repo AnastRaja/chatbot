@@ -95,6 +95,36 @@ router.post('/:projectId/session/:sessionId/takeover', auth, async (req, res) =>
     }
 });
 
+// End a session (admin ends the chat)
+router.post('/:projectId/session/:sessionId/end', auth, async (req, res) => {
+    try {
+        const { projectId, sessionId } = req.params;
+        const project = await Project.findOne({ id: projectId, userId: req.user.uid });
+        if (!project) return res.status(403).json({ error: 'Unauthorized' });
+
+        const session = await ChatSession.findById(sessionId);
+        if (!session || session.projectId !== projectId) return res.status(404).json({ error: 'Session not found' });
+
+        session.status = 'closed';
+        session.isAgentActive = false;
+        session.endedAt = new Date();
+        await session.save();
+
+        // Broadcast to dashboard so it disappears from active sessions
+        wsManager.broadcastToDashboard('SESSION_UPDATED', session);
+
+        // Notify the visitor widget that the chat has ended
+        wsManager.sendToWidget(sessionId, 'CHAT_ENDED', {
+            message: 'The support agent has ended this chat. Thank you for reaching out!'
+        });
+
+        res.json({ success: true, session });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
 // Get messages for a session
 router.get('/:projectId/session/:sessionId/messages', auth, async (req, res) => {
     try {

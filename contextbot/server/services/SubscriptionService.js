@@ -5,21 +5,21 @@ const PLANS = {
     free: {
         name: 'Free',
         maxProjects: 1,
-        maxStorage: 10 * 1024 * 1024, // 10 MB
+        maxStorage: 5 * 1024 * 1024, // 5 MB
         maxAIResponses: 500,
         models: ['gpt-4o-mini']
     },
     starter: {
         name: 'Starter',
         maxProjects: 5,
-        maxStorage: 100 * 1024 * 1024, // 100 MB
+        maxStorage: 50 * 1024 * 1024, // 50 MB
         maxAIResponses: 10000,
         models: ['gpt-4o-mini']
     },
     pro: {
         name: 'Pro',
         maxProjects: Infinity,
-        maxStorage: 500 * 1024 * 1024, // 500 MB
+        maxStorage: 100 * 1024 * 1024, // 100 MB
         maxAIResponses: 50000,
         models: ['gpt-4o', 'gpt-4o-mini']
     }
